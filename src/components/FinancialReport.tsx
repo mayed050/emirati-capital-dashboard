@@ -1,16 +1,38 @@
 "use client";
 
+import { useMemo } from "react";
 import { Printer } from "lucide-react";
-import { DATASET_INFO, marketLeaderStocks, stocksData } from "@/data/stocksData";
+import { DATASET_INFO, stocksData } from "@/data/stocksData";
 import { formatCurrency, formatDate, formatNumber, formatPercent, formatPlainPercent } from "@/lib/format";
 import { calculateDividendSustainability, calculateFinancialHealthScore, getExpectedTrend } from "@/utils/analyticsEngine";
 import { useLanguage } from "@/context/languageContext";
+import { useLiveMarket } from "@/hooks/useLiveMarket";
 
 export function FinancialReport() {
   const { language, t } = useLanguage();
-  const averageHealth = stocksData.reduce((sum, stock) => sum + calculateFinancialHealthScore(stock).score, 0) / stocksData.length;
-  const totalMarketCap = stocksData.reduce((sum, stock) => sum + stock.prices.marketCap, 0);
-  const topYield = [...marketLeaderStocks].sort((a, b) => b.fundamentals.dividendYield - a.fundamentals.dividendYield).slice(0, 5);
+  const { stocks: liveStocks } = useLiveMarket();
+
+  // Fallback to static seed data during server-side rendering (SSR) or initial hydration
+  const stocks = useMemo(() => {
+    return liveStocks.length > 0 ? liveStocks : stocksData;
+  }, [liveStocks]);
+
+  const leaderStocks = useMemo(() => stocks.filter((s) => s.marketLeader), [stocks]);
+
+  const averageHealth = useMemo(() => {
+    if (stocks.length === 0) return 0;
+    return stocks.reduce((sum, stock) => sum + calculateFinancialHealthScore(stock).score, 0) / stocks.length;
+  }, [stocks]);
+
+  const totalMarketCap = useMemo(() => {
+    return stocks.reduce((sum, stock) => sum + stock.prices.marketCap, 0);
+  }, [stocks]);
+
+  const topYield = useMemo(() => {
+    return [...leaderStocks]
+      .sort((a, b) => b.fundamentals.dividendYield - a.fundamentals.dividendYield)
+      .slice(0, 5);
+  }, [leaderStocks]);
 
   return (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
@@ -104,13 +126,13 @@ export function FinancialReport() {
         </header>
 
         <section className="mt-5 grid gap-3 grid-cols-2 md:grid-cols-4">
-          <Metric label={t("repStockCount")} value={formatNumber(stocksData.length)} />
+          <Metric label={t("repStockCount")} value={formatNumber(stocks.length)} />
           <Metric label={t("repMarketCap")} value={formatCurrency(totalMarketCap)} />
           <Metric label={t("repAvgHealth")} value={`${averageHealth.toFixed(0)}/100`} />
           <Metric 
             label={t("repTopYield")} 
-            value={formatPlainPercent(topYield[0].fundamentals.dividendYield)} 
-            subtext={`${topYield[0].symbol} · ${language === "ar" ? topYield[0].nameAr : topYield[0].nameEn}`}
+            value={topYield[0] ? formatPlainPercent(topYield[0].fundamentals.dividendYield) : "0.00%"} 
+            subtext={topYield[0] ? `${topYield[0].symbol} · ${language === "ar" ? topYield[0].nameAr : topYield[0].nameEn}` : ""}
           />
         </section>
 
@@ -151,7 +173,7 @@ export function FinancialReport() {
                 </tr>
               </thead>
               <tbody>
-                {stocksData.map((stock) => {
+                {stocks.map((stock) => {
                   const health = calculateFinancialHealthScore(stock);
                   const dividend = calculateDividendSustainability(stock);
                   const trend = getExpectedTrend(stock);
