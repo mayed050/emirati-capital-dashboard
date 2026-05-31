@@ -194,19 +194,30 @@ export function Dashboard() {
             </div>
           }
         />
+
+        {/* ━━━━ جدول حركة السوق ━━━━ */}
         <div className="overflow-x-auto rounded-xl border border-[color:var(--line)]">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
-            <thead className="text-[color:var(--muted)] border-b border-[color:var(--line)] bg-[color:var(--chip)]">
+          <table className="w-full min-w-[700px] border-collapse table-fixed text-sm">
+            {/* colgroup هو الطريقة الموثوقة لتثبيت عرض الأعمدة مع table-fixed */}
+            <colgroup>
+              <col style={{ width: "32%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "20%" }} />
+            </colgroup>
+
+            <thead className="border-b border-[color:var(--line)] bg-[color:var(--chip)] text-[color:var(--muted)]">
               <tr>
                 {[
-                  { label: "الشركة", icon: <Building2 size={14} className="text-sky-500 shrink-0" /> },
-                  { label: "السعر", icon: <Coins size={14} className="text-amber-500 shrink-0" /> },
-                  { label: "التغير", icon: <Percent size={14} className="text-violet-500 shrink-0" /> },
-                  { label: "مكرر الربحية", icon: <Calculator size={14} className="text-slate-400 shrink-0" /> },
-                  { label: "قيمة التداول", icon: <Layers size={14} className="text-teal-500 shrink-0" /> }
+                  { label: "الشركة",       icon: <Building2  size={13} className="shrink-0 text-sky-500"    /> },
+                  { label: "السعر",         icon: <Coins      size={13} className="shrink-0 text-amber-500"  /> },
+                  { label: "التغير %",     icon: <Percent    size={13} className="shrink-0 text-violet-500" /> },
+                  { label: "مكرر الربحية", icon: <Calculator size={13} className="shrink-0 text-slate-400"  /> },
+                  { label: "قيمة التداول", icon: <Layers     size={13} className="shrink-0 text-teal-500"   /> },
                 ].map((col) => (
-                  <th key={col.label} className="px-3 py-3.5 text-start font-black">
-                    <span className="inline-flex items-center gap-1.5">
+                  <th key={col.label} className="px-4 py-3.5 text-start font-black">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       {col.icon}
                       <span>{col.label}</span>
                     </span>
@@ -214,43 +225,58 @@ export function Dashboard() {
                 ))}
               </tr>
             </thead>
+
             <tbody>
               {movementRows.map((stock) => {
-                const isUp = stock.prices.changePercent >= 0;
+                const isUp   = stock.prices.changePercent >= 0;
                 const isZero = stock.prices.changePercent === 0;
+                const flashCls =
+                  directions[stock.symbol] === "up"   ? "animate-flash-up"   :
+                  directions[stock.symbol] === "down"  ? "animate-flash-down" : "";
 
                 return (
-                  <tr key={stock.symbol} className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/10">
-                    <td className="px-3 py-3">
-                      <Link href={`/stocks/${stock.symbol}`} className="inline-flex items-center gap-3 font-black text-sky-500">
+                  <tr
+                    key={stock.symbol}
+                    className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/10 transition-colors"
+                  >
+                    {/* عمود الشركة: max-w-0 + overflow-hidden يضمن عمل التقصير مع table-fixed */}
+                    <td className="max-w-0 overflow-hidden px-4 py-3">
+                      <Link
+                        href={`/stocks/${stock.symbol}`}
+                        className="flex min-w-0 items-center gap-2.5 font-black text-sky-500"
+                      >
                         <StockIcon stock={stock} size="sm" />
-                        <span>
-                          <span className="block">{stock.symbol}</span>
-                          <span className="block text-xs text-[color:var(--muted)]">{stock.nameAr}</span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-black">{stock.symbol}</span>
+                          <span className="block truncate text-xs font-semibold text-[color:var(--muted)]">
+                            {stock.nameAr}
+                          </span>
                         </span>
                       </Link>
                     </td>
-                    <td className={`number px-3 py-3 font-bold text-start text-[color:var(--foreground)] transition-all ${
-                      directions[stock.symbol] === "up"
-                        ? "animate-flash-up"
-                        : directions[stock.symbol] === "down"
-                        ? "animate-flash-down"
-                        : ""
-                    }`}>{formatCurrency(stock.prices.last)}</td>
-                    <td className={`number px-3 py-3 font-black text-start transition-all ${percentClass(stock.prices.changePercent)} ${
-                      directions[stock.symbol] === "up"
-                        ? "animate-flash-up"
-                        : directions[stock.symbol] === "down"
-                        ? "animate-flash-down"
-                        : ""
-                    }`}>
+
+                    {/* السعر */}
+                    <td className={`number px-4 py-3 font-bold text-[color:var(--foreground)] transition-all ${flashCls}`}>
+                      {formatCurrency(stock.prices.last)}
+                    </td>
+
+                    {/* التغير % */}
+                    <td className={`number px-4 py-3 font-black transition-all ${percentClass(stock.prices.changePercent)} ${flashCls}`}>
                       <span className="inline-flex items-center gap-1">
-                        {!isZero && (isUp ? "↗️" : "↘️")}
+                        {!isZero && (isUp ? "↗" : "↘")}
                         {formatPercent(stock.prices.changePercent)}
                       </span>
                     </td>
-                    <td className="number px-3 py-3 font-bold text-start text-[color:var(--foreground)]">{formatNumber(stock.fundamentals.pe)}</td>
-                    <td className="number px-3 py-3 font-bold text-start text-[color:var(--foreground)]">{formatCurrency(stock.prices.tradeValue)}</td>
+
+                    {/* مكرر الربحية */}
+                    <td className="number px-4 py-3 font-bold text-[color:var(--foreground)]">
+                      {formatNumber(stock.fundamentals.pe)}
+                    </td>
+
+                    {/* قيمة التداول */}
+                    <td className="number px-4 py-3 font-bold text-[color:var(--foreground)]">
+                      {formatCurrency(stock.prices.tradeValue)}
+                    </td>
                   </tr>
                 );
               })}
