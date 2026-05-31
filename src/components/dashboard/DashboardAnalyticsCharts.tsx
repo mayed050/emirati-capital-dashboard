@@ -53,15 +53,38 @@ export function DashboardAnalyticsCharts({
       </ChartPanel>
 
       <ChartPanel title={language === "ar" ? "أعلى العوائد النقدية للقادة (%)" : "Top Dividend Yields of Leaders (%)"}>
-        <ResponsiveContainer width="100%" height={285}>
-          <BarChart data={topYields} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.24)" />
-            <XAxis type="number" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={{ stroke: "var(--line)" }} />
-            <YAxis dataKey="symbol" type="category" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={{ stroke: "var(--line)" }} width={82} />
-            <Tooltip formatter={(value) => formatPlainPercent(Number(value))} />
-            <Bar dataKey="yield" fill="#21c98b" radius={[6, 6, 6, 6]} isAnimationActive={false} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="grid gap-3 h-[285px] overflow-y-auto pr-1">
+          {topYields.slice(0, 4).map((item, index) => {
+            return (
+              <div 
+                key={item.symbol} 
+                className="flex items-center justify-between p-3 rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-strong)] hover:border-emerald-500/35 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/12 text-sm font-black text-emerald-500">
+                    #{index + 1}
+                  </span>
+                  <div>
+                    <span className="block font-black text-[color:var(--foreground)]">{item.symbol}</span>
+                    <span className="block text-xs font-bold text-[color:var(--muted)]">
+                      {language === "ar" ? "قائد توزيعات" : "Dividend Leader"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <span className="number block text-lg font-black text-emerald-500">{item.yield}%</span>
+                  <div className="mt-1 h-1.5 w-24 rounded-full bg-[color:var(--line)] overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-emerald-500" 
+                      style={{ width: `${Math.min(item.yield * 10, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </ChartPanel>
     </section>
   );

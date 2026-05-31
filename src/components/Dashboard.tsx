@@ -115,9 +115,15 @@ export function Dashboard() {
               آخر تحديث داخلي: {DATASET_INFO.snapshotDate} · قادة دبي {leaderDfmCount} · قادة أبوظبي {leaderAdxCount} · متابعة إضافية {extraWatchlistCount}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <HeroMetric label="قادة السوق" value={formatNumber(unifiedMarket.counts.leaders)} hint={`${leaderDfmCount} دبي · ${leaderAdxCount} أبوظبي`} />
             <HeroMetric label="متوسط العائد" value={formatPlainPercent(marketSummary.avgYield)} hint={`لقادة ${marketLabels[selectedMarket]}`} />
+            <HeroMetric 
+              label={language === "ar" ? "أعلى عائد نقدي" : "Highest Cash Yield"} 
+              value={topYields[0] ? `${topYields[0].yield}%` : "0.00%"} 
+              hint={topYields[0] ? `${topYields[0].symbol} · ${language === "ar" ? "قائد العوائد" : "Yield Leader"}` : ""} 
+              tone="text-emerald-500" 
+            />
             <HeroMetric label="القيمة السوقية" value={formatCurrency(marketSummary.totalMarketCap)} hint={`تداول: ${formatCurrency(marketSummary.totalTradeValue)}`} />
             <HeroMetric label="تنبيهات ذكية" value={formatNumber(alerts.length)} hint="استحقاقات وصحة مالية" tone="text-amber-500" />
           </div>
