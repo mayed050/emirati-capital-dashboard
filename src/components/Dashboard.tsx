@@ -101,7 +101,7 @@ export function Dashboard() {
           <strong className="text-[color:var(--foreground)]">تنويه:</strong> المنصة معلوماتية للمتابعة فقط، وتعرض لقطة غير
           حية لقادة سوقي دبي وأبوظبي دون أي توصية شراء أو بيع.
         </div>
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr] xl:items-end">
+        <div className="grid gap-6">
           <div>
             <p className="text-sm font-black text-orange-500">لقطة سوق مرتبة حسب مرجع الصورة</p>
             <h1 className="mt-3 max-w-4xl text-3xl font-black leading-tight text-[color:var(--foreground)] md:text-5xl">
@@ -115,7 +115,7 @@ export function Dashboard() {
               آخر تحديث داخلي: {DATASET_INFO.snapshotDate} · قادة دبي {leaderDfmCount} · قادة أبوظبي {leaderAdxCount} · متابعة إضافية {extraWatchlistCount}
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <HeroMetric label="قادة السوق" value={formatNumber(unifiedMarket.counts.leaders)} hint={`${leaderDfmCount} دبي · ${leaderAdxCount} أبوظبي`} />
             <HeroMetric label="متوسط العائد" value={formatPlainPercent(marketSummary.avgYield)} hint={`لقادة ${marketLabels[selectedMarket]}`} />
             <HeroMetric 
