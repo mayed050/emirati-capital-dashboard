@@ -146,24 +146,35 @@ export function calculateFinancialHealthScore(stock: StockRecord): FinancialHeal
   };
 }
 
-export function simulateDrip(stock: StockRecord, initialShares: number, years = 10, annualContribution = 0): DripPoint[] {
+export function simulateDrip(stock: StockRecord, initialShares: number, years = 10, annualContribution = 0, reinvest = true): DripPoint[] {
   const points: DripPoint[] = [];
   let shares = Math.max(initialShares, 0);
   let price = stock.prices.last;
   const priceGrowth = clamp((stock.fundamentals.revenueGrowth + stock.fundamentals.netProfitGrowth) / 220, -0.04, 0.08);
   const dividendGrowth = clamp(stock.fundamentals.netProfitGrowth / 180, -0.03, 0.06);
   let dividend = stock.dividend.annualDividend;
+  let accumulatedDividendsCash = 0;
 
   for (let year = 1; year <= years; year += 1) {
     const dividendsReceived = shares * dividend;
-    const reinvestedShares = price > 0 ? (dividendsReceived + annualContribution) / price : 0;
-    shares += reinvestedShares;
+    let reinvestedShares = 0;
+
+    if (reinvest) {
+      reinvestedShares = price > 0 ? (dividendsReceived + annualContribution) / price : 0;
+      shares += reinvestedShares;
+    } else {
+      accumulatedDividendsCash += dividendsReceived;
+      reinvestedShares = price > 0 ? annualContribution / price : 0;
+      shares += reinvestedShares;
+    }
+
     points.push({
       year,
       shares: round(shares, 2),
-      portfolioValue: round(shares * price, 2),
+      portfolioValue: round(shares * price + (reinvest ? 0 : accumulatedDividendsCash), 2),
       dividendsReceived: round(dividendsReceived, 2),
       reinvestedShares: round(reinvestedShares, 2),
+      accumulatedDividendsCash: round(accumulatedDividendsCash, 2),
     });
     price *= 1 + priceGrowth;
     dividend *= 1 + dividendGrowth;

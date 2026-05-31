@@ -139,4 +139,5 @@ export type DripPoint = {
   portfolioValue: number;
   dividendsReceived: number;
   reinvestedShares: number;
+  accumulatedDividendsCash?: number;
 };

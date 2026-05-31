@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Pencil, Plus, RotateCcw, Trash2, Upload, X } from "lucide-react";
+import { Download, Pencil, Plus, RotateCcw, Trash2, Upload, X, Coins, TrendingUp, AlertTriangle } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -14,9 +14,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Legend
 } from "recharts";
 import { stocksData } from "@/data/stocksData";
 import { formatCurrency, formatCurrencyFull, formatNumber, percentClass } from "@/lib/format";
+import { MiniCard } from "@/components/ui/MiniCard";
 import {
   HOLDINGS_STORAGE_KEY,
   calculatePortfolioMetrics,
@@ -40,7 +42,13 @@ export function PortfolioTracker() {
   const [averageCost, setAverageCost] = useState("2.60");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  
+  // Interactive DRIP Simulator States
   const [dripSymbol, setDripSymbol] = useState<StockSymbol>("DEWA");
+  const [dripYears, setDripYears] = useState<number>(10);
+  const [dripContribution, setDripContribution] = useState<string>("5000");
+  const [dripReinvest, setDripReinvest] = useState<boolean>(true);
+
   const fileInput = useRef<HTMLInputElement | null>(null);
   const hydrated = useRef(false);
 
@@ -55,7 +63,7 @@ export function PortfolioTracker() {
         setHoldings(restored);
         if (restored[0]?.symbol) setDripSymbol(restored[0].symbol);
       } catch {
-        setMessage("تعذر قراءة بيانات المحفظة المخزنة محليا.");
+        setMessage("تعذر قراءة بيانات المحفظة المخزنة محلياً.");
       }
     }, 0);
 
@@ -69,9 +77,21 @@ export function PortfolioTracker() {
 
   const metrics = useMemo(() => calculatePortfolioMetrics(holdings, stocksData), [holdings]);
   const stress = useMemo(() => runStressTest(holdings, stocksData), [holdings]);
+  
   const selectedDripStock = stocksData.find((stock) => stock.symbol === dripSymbol) ?? stocksData[0];
   const selectedShares = holdings.find((holding) => holding.symbol === selectedDripStock.symbol)?.shares ?? (Number(shares) || 0);
-  const drip = simulateDrip(selectedDripStock, selectedShares, 10, 0);
+  
+  // Interactive simulateDrip call
+  const drip = useMemo(() => {
+    return simulateDrip(
+      selectedDripStock,
+      selectedShares,
+      dripYears,
+      Number(dripContribution) || 0,
+      dripReinvest
+    );
+  }, [selectedDripStock, selectedShares, dripYears, dripContribution, dripReinvest]);
+
   const cashflow = buildCashflow(holdings);
 
   function addHolding() {
@@ -169,22 +189,22 @@ export function PortfolioTracker() {
   }
 
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
+    <div className="view-fade grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
       <header className="glass-panel rounded-lg p-5">
-        <p className="text-sm font-black text-sky-700">LocalStorage · JSON Backup</p>
-        <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">متتبع المحفظة</h1>
+        <p className="text-sm font-black text-sky-700">LocalStorage · مخرجات معيارية</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950 md:text-3xl">متتبع المحفظة الاستثمارية الذكي</h1>
         <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-          أضف ملكياتك محليا، راقب التدفقات الشهرية، واختبر أثر هبوط 10% و20% و30% دون إرسال بياناتك إلى خادم.
+          أضف أصولك محلياً بشكل آمن، تابع التدفقات الشهرية للتوزيعات، واختبر أثر هزات وهبوط السوق على عوائدك دون إرسال بياناتك لخوادم خارجية.
         </p>
       </header>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
         <div className="glass-panel rounded-lg p-4">
-          <h2 className="text-xl font-black text-slate-950">إضافة أصل</h2>
+          <h2 className="text-xl font-black text-slate-950">إدارة الأصول والصفقات</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-1">
             <label className="grid gap-1 text-sm font-black text-slate-600">
-              السهم
-              <select value={symbol} onChange={(event) => setSymbol(event.target.value as StockSymbol)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3">
+              اختر السهم
+              <select value={symbol} onChange={(event) => setSymbol(event.target.value as StockSymbol)} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 font-bold">
                 {stocksData.map((stock) => (
                   <option key={stock.symbol} value={stock.symbol}>
                     {stock.symbol} - {stock.nameAr}
@@ -193,23 +213,23 @@ export function PortfolioTracker() {
               </select>
             </label>
             <label className="grid gap-1 text-sm font-black text-slate-600">
-              عدد الأسهم
-              <input value={shares} onChange={(event) => setShares(event.target.value)} className="number min-h-11 rounded-lg border border-slate-200 bg-white px-3" inputMode="decimal" />
+              عدد الأسهم المملوكة
+              <input value={shares} onChange={(event) => setShares(event.target.value)} className="number min-h-11 rounded-lg border border-slate-200 bg-white px-3 font-bold" inputMode="decimal" />
             </label>
             <label className="grid gap-1 text-sm font-black text-slate-600">
-              متوسط التكلفة
-              <input value={averageCost} onChange={(event) => setAverageCost(event.target.value)} className="number min-h-11 rounded-lg border border-slate-200 bg-white px-3" inputMode="decimal" />
+              متوسط تكلفة الشراء (درهم)
+              <input value={averageCost} onChange={(event) => setAverageCost(event.target.value)} className="number min-h-11 rounded-lg border border-slate-200 bg-white px-3 font-bold" inputMode="decimal" />
             </label>
           </div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={addHolding} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 font-black text-white hover:bg-sky-800 sm:w-auto">
+            <button type="button" onClick={addHolding} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 font-black text-white hover:bg-sky-800 sm:w-auto transition-all">
               {editingId ? <Pencil size={18} aria-hidden /> : <Plus size={18} aria-hidden />}
-              {editingId ? "حفظ التعديل" : "إضافة"}
+              {editingId ? "حفظ التعديل" : "إضافة السهم"}
             </button>
             {editingId ? (
-              <button type="button" onClick={cancelEdit} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 font-black text-slate-700 hover:bg-slate-50 sm:w-auto">
+              <button type="button" onClick={cancelEdit} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 font-black text-slate-700 hover:bg-slate-50 sm:w-auto transition-all">
                 <X size={18} aria-hidden />
-                إلغاء
+                إلغاء التعديل
               </button>
             ) : null}
           </div>
@@ -217,42 +237,43 @@ export function PortfolioTracker() {
         </div>
 
         <div className="glass-panel rounded-lg p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-xl font-black text-slate-950">نسخ احتياطي واستعادة</h2>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-xl font-black text-slate-950">إحصائيات المحفظة والأدوات</h2>
             <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
-              <button type="button" onClick={exportBackup} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:bg-sky-50">
+              <button type="button" onClick={exportBackup} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:bg-sky-50 transition-all">
                 <Download size={17} aria-hidden />
-                Export JSON
+                تصدير محلي JSON
               </button>
-              <button type="button" onClick={() => fileInput.current?.click()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:bg-sky-50">
+              <button type="button" onClick={() => fileInput.current?.click()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:bg-sky-50 transition-all">
                 <Upload size={17} aria-hidden />
-                Import JSON
+                استيراد محفظة JSON
               </button>
-              <button type="button" onClick={() => setHoldings([])} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-black text-rose-700 hover:bg-rose-100">
+              <button type="button" onClick={() => setHoldings([])} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-black text-rose-700 hover:bg-rose-100 transition-all">
                 <RotateCcw size={17} aria-hidden />
-                تصفير
+                تصفير المحفظة
               </button>
             </div>
             <input ref={fileInput} type="file" accept="application/json" className="hidden" onChange={(event) => void importBackup(event.target.files?.[0])} />
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <Metric label="القيمة السوقية" value={formatCurrencyFull(metrics.marketValue)} />
-            <Metric label="التكلفة" value={formatCurrencyFull(metrics.totalCost)} />
-            <Metric label="الربح/الخسارة" value={formatCurrencyFull(metrics.unrealizedPnL)} tone={percentClass(metrics.unrealizedPnL)} />
-            <Metric label="دخل سنوي" value={formatCurrencyFull(metrics.annualIncome)} />
+          {/* Metrics De-duplicated with MiniCard */}
+          <div className="mt-4 grid gap-3 grid-cols-2 md:grid-cols-4">
+            <MiniCard label="القيمة السوقية للمحفظة" value={formatCurrencyFull(metrics.marketValue)} />
+            <MiniCard label="إجمالي تكلفة الشراء" value={formatCurrencyFull(metrics.totalCost)} />
+            <MiniCard label="الأرباح/الخسائر غير المحققة" value={formatCurrencyFull(metrics.unrealizedPnL)} className={percentClass(metrics.unrealizedPnL)} />
+            <MiniCard label="العائد السنوي المتوقع" value={formatCurrencyFull(metrics.annualIncome)} />
           </div>
         </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="glass-panel rounded-lg p-4">
-          <h2 className="text-xl font-black text-slate-950">الأصول</h2>
+          <h2 className="text-xl font-black text-slate-950">تفاصيل الأصول والمراكز الحالية</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-slate-500">
                 <tr>
-                  {["السهم", "الأسهم", "التكلفة", "السعر", "القيمة", "الدخل السنوي", ""].map((heading) => (
+                  {["السهم", "عدد الأسهم", "متوسط التكلفة", "السعر الحالي", "القيمة السوقية", "التوزيع السنوي", "خيارات"].map((heading) => (
                     <th key={heading} className="border-b border-slate-200 px-3 py-2 text-right font-black">{heading}</th>
                   ))}
                 </tr>
@@ -262,7 +283,7 @@ export function PortfolioTracker() {
                   const stock = stocksData.find((item) => item.symbol === holding.symbol);
                   if (!stock) return null;
                   return (
-                    <tr key={holding.id} className="border-b border-slate-100">
+                    <tr key={holding.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
                       <td className="px-3 py-3 font-black text-slate-900">{stock.symbol}<div className="text-xs text-slate-500">{stock.nameAr}</div></td>
                       <td className="number px-3 py-3">{formatNumber(holding.shares)}</td>
                       <td className="number px-3 py-3">{formatCurrency(holding.averageCost)}</td>
@@ -271,10 +292,10 @@ export function PortfolioTracker() {
                       <td className="number px-3 py-3">{formatCurrencyFull(holding.shares * stock.dividend.annualDividend)}</td>
                       <td className="px-3 py-3">
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => startEdit(holding)} className="grid h-9 w-9 place-items-center rounded-lg border border-sky-200 text-sky-700 hover:bg-sky-50" aria-label="تعديل الأصل">
+                          <button type="button" onClick={() => startEdit(holding)} className="grid h-9 w-9 place-items-center rounded-lg border border-sky-200 text-sky-700 hover:bg-sky-50 transition-all" aria-label="تعديل الأصل">
                             <Pencil size={16} aria-hidden />
                           </button>
-                          <button type="button" onClick={() => removeHolding(holding.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50" aria-label="حذف الأصل">
+                          <button type="button" onClick={() => removeHolding(holding.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 transition-all" aria-label="حذف الأصل">
                             <Trash2 size={16} aria-hidden />
                           </button>
                         </div>
@@ -284,16 +305,16 @@ export function PortfolioTracker() {
                 })}
               </tbody>
             </table>
-            {!holdings.length ? <p className="py-8 text-center text-sm font-bold text-slate-500">لم تتم إضافة أصول بعد.</p> : null}
+            {!holdings.length ? <p className="py-8 text-center text-sm font-bold text-slate-500">لم تقم بإضافة أسهم لمحفظتك بعد.</p> : null}
           </div>
         </div>
 
         <div className="glass-panel rounded-lg p-4">
-          <h2 className="text-xl font-black text-slate-950">توزيع المحفظة</h2>
-          <div className="mt-4">
-            <ResponsiveContainer width="100%" height={288}>
+          <h2 className="text-xl font-black text-slate-950">توزيع ونسب تركيز المحفظة</h2>
+          <div className="mt-4 flex justify-center">
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={metrics.allocation} dataKey="value" nameKey="symbol" innerRadius={58} outerRadius={98} paddingAngle={3}>
+                <Pie data={metrics.allocation} dataKey="value" nameKey="symbol" innerRadius={58} outerRadius={90} paddingAngle={3}>
                   {metrics.allocation.map((entry, index) => (
                     <Cell key={entry.symbol} fill={colors[index % colors.length]} />
                   ))}
@@ -302,9 +323,9 @@ export function PortfolioTracker() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2 mt-2">
             {metrics.allocation.map((item, index) => (
-              <div key={item.symbol} className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 text-sm">
+              <div key={item.symbol} className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 text-sm border border-slate-100">
                 <span className="flex items-center gap-2 font-black text-slate-800">
                   <span className="h-3 w-3 rounded-full" style={{ background: colors[index % colors.length] }} />
                   {item.symbol}
@@ -314,70 +335,141 @@ export function PortfolioTracker() {
             ))}
           </div>
           {metrics.concentrationAlerts.map((alert) => (
-            <p key={alert.id} className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-900">{alert.message}</p>
+            <p key={alert.id} className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-900 flex items-center gap-2">
+              <AlertTriangle className="text-amber-600 shrink-0" size={18} />
+              {alert.message}
+            </p>
           ))}
         </div>
       </section>
 
+      {/* Dynamic Compounding DRIP Simulator & Monthly Cashflow */}
       <section className="grid gap-4 xl:grid-cols-2">
+        {/* Monthly Cashflow Calendar */}
         <div className="glass-panel rounded-lg p-4">
-          <h2 className="text-xl font-black text-slate-950">التدفق النقدي الشهري</h2>
+          <h2 className="text-xl font-black text-slate-950">التدفق النقدي المتوقع للتوزيعات (شهرياً)</h2>
+          <p className="text-sm text-slate-500 mt-1">توقع توزيعات السيولة النقدية المستلمة مقسمة على شهور السنة المالية.</p>
           <div className="mt-4">
-            <ResponsiveContainer width="100%" height={288}>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={cashflow}>
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value) => formatCurrencyFull(Number(value))} />
-                <Bar dataKey="income" name="توزيعات" fill="#0f6aa8" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="income" name="مبلغ التوزيع المستحق" fill="#0f6aa8" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Premium Interactive DRIP Compounding Planner */}
         <div className="glass-panel rounded-lg p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-xl font-black text-slate-950">محاكاة DRIP</h2>
-            <select value={dripSymbol} onChange={(event) => setDripSymbol(event.target.value as StockSymbol)} className="min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold">
-              {stocksData.map((stock) => (
-                <option key={stock.symbol} value={stock.symbol}>{stock.symbol}</option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between border-b border-slate-100 pb-3 mb-4">
+            <div>
+              <h2 className="text-xl font-black text-slate-950 flex items-center gap-2">
+                <Coins className="text-sky-500" size={20} />
+                مخطط تراكم وتضاعف الأرباح (DRIP)
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">محاكاة أثر الفائدة المركبة وإعادة استثمار الأرباح النقدية لشراء أسهم جديدة.</p>
+            </div>
+            
+            <label className="grid gap-1 text-[11px] font-black text-slate-600 shrink-0">
+              سهم المحاكاة
+              <select value={dripSymbol} onChange={(event) => setDripSymbol(event.target.value as StockSymbol)} className="min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold">
+                {stocksData.map((stock) => (
+                  <option key={stock.symbol} value={stock.symbol}>{stock.symbol} - {stock.nameAr}</option>
+                ))}
+              </select>
+            </label>
           </div>
-          <div className="mt-4">
-            <ResponsiveContainer width="100%" height={288}>
-              <LineChart data={drip}>
-                <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+
+          {/* Interactive DRIP Controls Layout */}
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 bg-slate-50 rounded-xl p-3.5 mb-4">
+            <label className="grid gap-1 text-xs font-black text-slate-600">
+              أعوام الاستثمار
+              <select 
+                value={dripYears} 
+                onChange={(event) => setDripYears(Number(event.target.value))} 
+                className="min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold"
+              >
+                {[5, 10, 15, 20, 25, 30].map((yr) => (
+                  <option key={yr} value={yr}>{yr} سنة</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1 text-xs font-black text-slate-600">
+              المساهمة السنوية الإضافية (درهم)
+              <input 
+                value={dripContribution} 
+                onChange={(event) => setDripContribution(event.target.value)} 
+                className="number min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold" 
+                inputMode="decimal"
+                placeholder="0"
+              />
+            </label>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-black text-slate-600">إعادة الاستثمار التلقائي</span>
+              <button
+                type="button"
+                onClick={() => setDripReinvest(!dripReinvest)}
+                className={`min-h-9 rounded-lg px-3 text-xs font-black transition-all ${
+                  dripReinvest 
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10" 
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {dripReinvest ? "مفعّل (أرباح مركبة)" : "معطل (سحب كاش)"}
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <ResponsiveContainer width="100%" height={218}>
+              <LineChart data={drip} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <XAxis dataKey="year" tick={{ fontSize: 11 }} label={{ value: "السنوات", position: "insideBottom", offset: -5, fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value) => formatCurrencyFull(Number(value))} />
-                <Line dataKey="portfolioValue" name="قيمة المحفظة" stroke="#10b981" strokeWidth={3} />
+                <Legend verticalAlign="top" height={36} iconType="circle" />
+                <Line type="monotone" dataKey="portfolioValue" name="إجمالي قيمة المحفظة (درهم)" stroke="#10b981" strokeWidth={3} dot={{ r: 3 }} isAnimationActive={false} />
+                {!dripReinvest && (
+                  <Line type="monotone" dataKey="accumulatedDividendsCash" name="الكاش المتراكم الموزع (درهم)" stroke="#0ea5e9" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 2 }} isAnimationActive={false} />
+                )}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          {/* Quick Informational Advisory Box */}
+          <div className="mt-3.5 rounded-lg border border-sky-500/15 bg-sky-500/5 p-3 text-xs leading-6 text-slate-600 flex items-start gap-2">
+            <Info className="text-sky-500 shrink-0 mt-0.5" size={16} />
+            <p>
+              {dripReinvest 
+                ? `محاكاة إعادة استثمار الأرباح لشراء أسهم جديدة في ${selectedDripStock.nameAr} تنشط قوة الفائدة المركبة! قيمة المحفظة النهائية المتوقعة بعد ${dripYears} سنة تبلغ ${formatCurrencyFull(drip[drip.length - 1]?.portfolioValue)} درهم بعدد أسهم قدره ${formatNumber(drip[drip.length - 1]?.shares)} سهم.`
+                : `عند سحب التوزيعات كاش بدلاً من إعادة استثمارها، يفقد المستثمر أثر النمو المتضاعف للأصول. إجمالي الكاش التراكمي المستلم في نهاية ${dripYears} سنة يبلغ ${formatCurrencyFull(drip[drip.length - 1]?.accumulatedDividendsCash)} درهم.`
+              }
+            </p>
           </div>
         </div>
       </section>
 
+      {/* Portfolio Stress Testing */}
       <section className="glass-panel rounded-lg p-4">
-        <h2 className="text-xl font-black text-slate-950">اختبار الضغط</h2>
+        <h2 className="text-xl font-black text-slate-950 flex items-center gap-2">
+          <TrendingUp className="text-rose-500" size={20} />
+          اختبارات ضغط وهبوط الأسواق
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">محاكاة افتراضية لأثر الأزمات المالية وهبوط أسعار الأسهم بمعدل 10%، 20%، و30% على قيمة محفظتك الحالية.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {stress.map((scenario) => (
-            <div key={scenario.dropPercent} className="rounded-lg border border-rose-100 bg-rose-50/70 p-4">
-              <p className="text-sm font-black text-rose-700">هبوط {scenario.dropPercent}%</p>
+            <div key={scenario.dropPercent} className="rounded-xl border border-rose-100 bg-rose-50/70 p-4 transition-all hover:bg-rose-50">
+              <p className="text-sm font-black text-rose-700">سيناريو هبوط {scenario.dropPercent}%</p>
               <p className="number mt-2 text-xl font-black text-slate-950">{formatCurrencyFull(scenario.portfolioValue)}</p>
-              <p className="mt-1 text-sm font-bold text-rose-700">خسارة {formatCurrencyFull(scenario.lossValue)}</p>
-              <p className="mt-2 text-xs font-bold text-slate-500">دخل سنوي بعد الضغط: {formatCurrencyFull(scenario.annualIncomeAfterDrop)}</p>
+              <p className="mt-1 text-sm font-bold text-rose-700">الخسارة الدفترية: {formatCurrencyFull(scenario.lossValue)}</p>
+              <p className="mt-3 border-t border-rose-200/50 pt-2 text-xs font-bold text-slate-500 leading-6">الدخل السنوي المتوقع للتوزيعات بعد الضغط: {formatCurrencyFull(scenario.annualIncomeAfterDrop)}</p>
             </div>
           ))}
         </div>
       </section>
-    </div>
-  );
-}
-
-function Metric({ label, value, tone = "text-slate-950" }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white/70 p-3">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className={`number mt-1 text-lg font-black ${tone}`}>{value}</p>
     </div>
   );
 }
