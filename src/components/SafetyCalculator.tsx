@@ -6,6 +6,7 @@ import { stocksData } from "@/data/stocksData";
 import { formatCurrency, formatCurrencyFull, formatNumber, formatPercent } from "@/lib/format";
 import { calculateDividendSustainability, calculateFinancialHealthScore } from "@/utils/analyticsEngine";
 import { StockIcon } from "@/components/StockIcon";
+import { MiniCard } from "@/components/ui/MiniCard";
 import type { StockSymbol } from "@/types";
 
 export function SafetyCalculator() {
@@ -78,9 +79,9 @@ export function SafetyCalculator() {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <Mini label="السعر" value={formatCurrency(stock.prices.last)} />
-              <Mini label="التوزيع" value={formatCurrency(stock.dividend.annualDividend)} />
-              <Mini label="العائد" value={formatPercent(stock.fundamentals.dividendYield)} />
+              <MiniCard label="السعر" value={formatCurrency(stock.prices.last)} />
+              <MiniCard label="التوزيع" value={formatCurrency(stock.dividend.annualDividend)} />
+              <MiniCard label="العائد" value={formatPercent(stock.fundamentals.dividendYield)} />
             </div>
           </div>
         </div>
@@ -143,14 +144,6 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
   );
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="rounded-lg bg-white/5 p-2">
-      <span className="block text-xs font-black text-slate-500">{label}</span>
-      <span className="number mt-1 block font-black text-slate-950">{value}</span>
-    </span>
-  );
-}
 
 function Notice({ title, value }: { title: string; value: string }) {
   return (
