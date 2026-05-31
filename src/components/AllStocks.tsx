@@ -143,7 +143,7 @@ export function AllStocks() {
         <table className="w-full min-w-[1180px] border-collapse text-sm">
           <thead className="text-[color:var(--muted)]">
             <tr>
-              {["الشركة", "السوق", "القطاع", "السعر", "التغير", "قيمة التداول", "P/E", "EPS", "ROE", "العائد", "الصحة", "الاتجاه"].map((heading) => (
+              {["الشركة", "السعر", "التغير", "العائد", "الصحة", "قيمة التداول", "P/E", "EPS", "ROE", "الاتجاه", "القطاع", "السوق"].map((heading) => (
                 <th key={heading} className="border-b border-[color:var(--line)] px-3 py-3 text-right font-black">
                   {heading}
                 </th>
@@ -165,8 +165,6 @@ export function AllStocks() {
                       </span>
                     </Link>
                   </td>
-                  <td className="px-3 py-3"><MarketBadge market={stock.market} /></td>
-                  <td className="px-3 py-3 font-semibold text-[color:var(--muted)]">{stock.sector}</td>
                   <td className={`number px-3 py-3 font-bold text-[color:var(--foreground)] transition-all ${
                     directions[stock.symbol] === "up"
                       ? "animate-flash-up"
@@ -181,17 +179,19 @@ export function AllStocks() {
                       ? "animate-flash-down"
                       : ""
                   }`}>{formatPercent(stock.prices.changePercent)}</td>
-                  <NumberCell value={formatCurrency(stock.prices.tradeValue)} />
-                  <NumberCell value={formatNumber(stock.fundamentals.pe)} />
-                  <NumberCell value={formatNumber(stock.fundamentals.eps)} />
-                  <NumberCell value={formatPercent(stock.fundamentals.roe)} />
                   <NumberCell value={formatPercent(stock.fundamentals.dividendYield)} />
                   <td className="px-3 py-3">
                     <span className={`rounded-full border px-2 py-1 text-xs font-black ${healthClass(healthScore.score)}`}>
                       {healthScore.band} · {healthScore.score}
                     </span>
                   </td>
+                  <NumberCell value={formatCurrency(stock.prices.tradeValue)} />
+                  <NumberCell value={formatNumber(stock.fundamentals.pe)} />
+                  <NumberCell value={formatNumber(stock.fundamentals.eps)} />
+                  <NumberCell value={formatPercent(stock.fundamentals.roe)} />
                   <td className="px-3 py-3 font-bold text-[color:var(--muted)]">{trend.direction}</td>
+                  <td className="px-3 py-3 font-semibold text-[color:var(--muted)]">{stock.sector}</td>
+                  <td className="px-3 py-3"><MarketBadge market={stock.market} /></td>
                 </tr>
               );
             })}
