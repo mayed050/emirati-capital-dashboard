@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Building2, Coins, Percent, Calculator, Layers } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
@@ -196,43 +196,64 @@ export function Dashboard() {
         />
         <div className="overflow-x-auto rounded-xl border border-[color:var(--line)]">
           <table className="w-full min-w-[720px] border-collapse text-sm">
-            <thead className="text-[color:var(--muted)]">
+            <thead className="text-[color:var(--muted)] border-b border-[color:var(--line)] bg-[color:var(--chip)]">
               <tr>
-                {["الشركة", "السعر", "التغير", "مكرر الربحية", "قيمة التداول"].map((heading) => (
-                  <th key={heading} className="border-b border-[color:var(--line)] px-3 py-3 text-right font-black">{heading}</th>
+                {[
+                  { label: "الشركة", icon: <Building2 size={14} className="text-sky-500 shrink-0" /> },
+                  { label: "السعر", icon: <Coins size={14} className="text-amber-500 shrink-0" /> },
+                  { label: "التغير", icon: <Percent size={14} className="text-violet-500 shrink-0" /> },
+                  { label: "مكرر الربحية", icon: <Calculator size={14} className="text-slate-400 shrink-0" /> },
+                  { label: "قيمة التداول", icon: <Layers size={14} className="text-teal-500 shrink-0" /> }
+                ].map((col) => (
+                  <th key={col.label} className="px-3 py-3.5 text-start font-black">
+                    <span className="inline-flex items-center gap-1.5">
+                      {col.icon}
+                      <span>{col.label}</span>
+                    </span>
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {movementRows.map((stock) => (
-                <tr key={stock.symbol} className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/10">
-                  <td className="px-3 py-3">
-                    <Link href={`/stocks/${stock.symbol}`} className="inline-flex items-center gap-3 font-black text-sky-500">
-                      <StockIcon stock={stock} size="sm" />
-                      <span>
-                        <span className="block">{stock.symbol}</span>
-                        <span className="block text-xs text-[color:var(--muted)]">{stock.nameAr}</span>
+              {movementRows.map((stock) => {
+                const isUp = stock.prices.changePercent >= 0;
+                const isZero = stock.prices.changePercent === 0;
+
+                return (
+                  <tr key={stock.symbol} className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/10">
+                    <td className="px-3 py-3">
+                      <Link href={`/stocks/${stock.symbol}`} className="inline-flex items-center gap-3 font-black text-sky-500">
+                        <StockIcon stock={stock} size="sm" />
+                        <span>
+                          <span className="block">{stock.symbol}</span>
+                          <span className="block text-xs text-[color:var(--muted)]">{stock.nameAr}</span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className={`number px-3 py-3 font-bold text-start text-[color:var(--foreground)] transition-all ${
+                      directions[stock.symbol] === "up"
+                        ? "animate-flash-up"
+                        : directions[stock.symbol] === "down"
+                        ? "animate-flash-down"
+                        : ""
+                    }`}>{formatCurrency(stock.prices.last)}</td>
+                    <td className={`number px-3 py-3 font-black text-start transition-all ${percentClass(stock.prices.changePercent)} ${
+                      directions[stock.symbol] === "up"
+                        ? "animate-flash-up"
+                        : directions[stock.symbol] === "down"
+                        ? "animate-flash-down"
+                        : ""
+                    }`}>
+                      <span className="inline-flex items-center gap-1">
+                        {!isZero && (isUp ? "↗️" : "↘️")}
+                        {formatPercent(stock.prices.changePercent)}
                       </span>
-                    </Link>
-                  </td>
-                  <td className={`number px-3 py-3 font-black transition-all ${
-                    directions[stock.symbol] === "up"
-                      ? "animate-flash-up"
-                      : directions[stock.symbol] === "down"
-                      ? "animate-flash-down"
-                      : ""
-                  }`}>{formatCurrency(stock.prices.last)}</td>
-                  <td className={`number px-3 py-3 font-black transition-all ${percentClass(stock.prices.changePercent)} ${
-                    directions[stock.symbol] === "up"
-                      ? "animate-flash-up"
-                      : directions[stock.symbol] === "down"
-                      ? "animate-flash-down"
-                      : ""
-                  }`}>{formatPercent(stock.prices.changePercent)}</td>
-                  <td className="number px-3 py-3 font-black">{formatNumber(stock.fundamentals.pe)}</td>
-                  <td className="number px-3 py-3 font-black">{formatCurrency(stock.prices.tradeValue)}</td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="number px-3 py-3 font-bold text-start text-[color:var(--foreground)]">{formatNumber(stock.fundamentals.pe)}</td>
+                    <td className="number px-3 py-3 font-bold text-start text-[color:var(--foreground)]">{formatCurrency(stock.prices.tradeValue)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
