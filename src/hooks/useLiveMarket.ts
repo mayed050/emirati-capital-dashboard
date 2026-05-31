@@ -37,12 +37,66 @@ function initializeGlobalState() {
 function startGlobalInterval() {
   if (globalTickInterval) clearInterval(globalTickInterval);
 
-  globalTickInterval = setInterval(() => {
+  globalTickInterval = setInterval(async () => {
     if (globalListeners.size === 0) return;
 
-    // استدعاء محاكي التذبذب السعري
-    const result = tickDataset(globalStocks, globalForceSim);
-    globalStocks = result.stocks;
+    let updatedStocks = [...globalStocks];
+    let directions: Record<string, "up" | "down" | "none"> = {};
+
+    try {
+      // Fetch prices from our unified Next.js API route
+      const res = await fetch("/api/market/live-prices");
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      const livePrices = data.prices as Record<string, number>;
+
+      if (livePrices && Object.keys(livePrices).length > 0) {
+        updatedStocks = globalStocks.map((stock) => {
+          const livePrice = livePrices[stock.symbol];
+          if (livePrice === undefined || livePrice === stock.prices.last) {
+            directions[stock.symbol] = "none";
+            return stock;
+          }
+
+          const previousClose = stock.prices.previousClose || stock.prices.last;
+          const change = Number((livePrice - previousClose).toFixed(4));
+          const changePercent = Number(((change / previousClose) * 100).toFixed(4));
+          const direction = livePrice > stock.prices.last ? "up" : "down";
+          directions[stock.symbol] = direction;
+
+          const additionalVolume = Math.floor(Math.random() * 4000) + 200;
+          const additionalValue = additionalVolume * livePrice;
+
+          return {
+            ...stock,
+            prices: {
+              ...stock.prices,
+              last: livePrice,
+              change,
+              changePercent,
+              high: Math.max(stock.prices.high, livePrice),
+              low: Math.min(stock.prices.low, livePrice),
+              volume: stock.prices.volume + additionalVolume,
+              tradeValue: Number((stock.prices.tradeValue + additionalValue).toFixed(2)),
+              lastUpdated: new Date().toLocaleTimeString("ar-AE", { hour12: false }),
+            },
+            fundamentals: {
+              ...stock.fundamentals,
+              dividendYield: stock.dividend.annualDividend > 0
+                ? Number(((stock.dividend.annualDividend / livePrice) * 100).toFixed(2))
+                : 0,
+            }
+          };
+        });
+      }
+    } catch (e) {
+      // Fallback seamlessly to client-side simulator if API is offline or during SSR build
+      const result = tickDataset(globalStocks, globalForceSim);
+      updatedStocks = result.stocks;
+      directions = result.directions;
+    }
+
+    globalStocks = updatedStocks;
 
     // Check and trigger active price alerts
     if (typeof window !== "undefined") {
@@ -80,7 +134,7 @@ function startGlobalInterval() {
     }
 
     // إرسال الإشارة لكافة المكونات المسجلة للأسعار
-    globalListeners.forEach((listener) => listener({ stocks: globalStocks, directions: result.directions }));
+    globalListeners.forEach((listener) => listener({ stocks: globalStocks, directions }));
 
     // تنظيف خلايا الوميض بعد ثانية واحدة لإتاحة إضاءتها من جديد عند النبضة التالية
     if (globalFlashTimeout) clearTimeout(globalFlashTimeout);
