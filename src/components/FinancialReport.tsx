@@ -107,7 +107,11 @@ export function FinancialReport() {
           <Metric label={t("repStockCount")} value={formatNumber(stocksData.length)} />
           <Metric label={t("repMarketCap")} value={formatCurrency(totalMarketCap)} />
           <Metric label={t("repAvgHealth")} value={`${averageHealth.toFixed(0)}/100`} />
-          <Metric label={t("repTopYield")} value={`${topYield[0].symbol} ${formatPlainPercent(topYield[0].fundamentals.dividendYield)}`} />
+          <Metric 
+            label={t("repTopYield")} 
+            value={formatPlainPercent(topYield[0].fundamentals.dividendYield)} 
+            subtext={`${topYield[0].symbol} · ${language === "ar" ? topYield[0].nameAr : topYield[0].nameEn}`}
+          />
         </section>
 
         <section className="mt-6">
@@ -183,11 +187,14 @@ export function FinancialReport() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, subtext }: { label: string; value: string; subtext?: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="number mt-2 text-xl font-black text-slate-950">{value}</p>
+    <div className="rounded-lg border border-slate-200 bg-white p-4 flex flex-col justify-between min-h-[96px]">
+      <div>
+        <p className="text-xs font-black text-slate-500">{label}</p>
+        <p className="number mt-2 text-xl font-black text-slate-950">{value}</p>
+      </div>
+      {subtext && <p className="mt-2 text-[10px] font-bold text-slate-400 truncate">{subtext}</p>}
     </div>
   );
 }
