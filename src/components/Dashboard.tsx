@@ -198,7 +198,7 @@ export function Dashboard() {
         {/* ━━━━ جدول حركة السوق ━━━━ */}
         <div className="overflow-x-auto rounded-xl border border-[color:var(--line)]">
           <table className="w-full min-w-[700px] border-collapse table-fixed text-sm">
-            {/* colgroup هو الطريقة الموثوقة لتثبيت عرض الأعمدة مع table-fixed */}
+            {/* colgroup يثبّت عرض كل عمود مستقلاً عن المحتوى */}
             <colgroup>
               <col style={{ width: "32%" }} />
               <col style={{ width: "16%" }} />
@@ -209,15 +209,23 @@ export function Dashboard() {
 
             <thead className="border-b border-[color:var(--line)] bg-[color:var(--chip)] text-[color:var(--muted)]">
               <tr>
+                {/* عمود الشركة: محاذاة يمين */}
+                <th className="px-4 py-3.5 text-right font-black">
+                  <span className="inline-flex flex-row-reverse items-center gap-1.5 whitespace-nowrap">
+                    <Building2 size={13} className="shrink-0 text-sky-500" />
+                    <span>الشركة</span>
+                  </span>
+                </th>
+                {/* الأعمدة الرقمية: text-right ليتطابق مع خلايا البيانات */}
                 {[
-                  { label: "الشركة",       icon: <Building2  size={13} className="shrink-0 text-sky-500"    /> },
                   { label: "السعر",         icon: <Coins      size={13} className="shrink-0 text-amber-500"  /> },
-                  { label: "التغير %",     icon: <Percent    size={13} className="shrink-0 text-violet-500" /> },
+                  { label: "التغير %",      icon: <Percent    size={13} className="shrink-0 text-violet-500" /> },
                   { label: "مكرر الربحية", icon: <Calculator size={13} className="shrink-0 text-slate-400"  /> },
                   { label: "قيمة التداول", icon: <Layers     size={13} className="shrink-0 text-teal-500"   /> },
                 ].map((col) => (
-                  <th key={col.label} className="px-4 py-3.5 text-start font-black">
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <th key={col.label} className="px-4 py-3.5 text-right font-black">
+                    {/* flex-row-reverse: الأيقونة يسار والنص يمين (اتجاه عربي طبيعي) */}
+                    <span className="inline-flex flex-row-reverse items-center gap-1.5 whitespace-nowrap">
                       {col.icon}
                       <span>{col.label}</span>
                     </span>
@@ -239,14 +247,14 @@ export function Dashboard() {
                     key={stock.symbol}
                     className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/10 transition-colors"
                   >
-                    {/* عمود الشركة: max-w-0 + overflow-hidden يضمن عمل التقصير مع table-fixed */}
-                    <td className="max-w-0 overflow-hidden px-4 py-3">
+                    {/* عمود الشركة: يمين مع truncation */}
+                    <td className="max-w-0 overflow-hidden px-4 py-3 text-right">
                       <Link
                         href={`/stocks/${stock.symbol}`}
-                        className="flex min-w-0 items-center gap-2.5 font-black text-sky-500"
+                        className="inline-flex min-w-0 flex-row-reverse items-center gap-2.5 font-black text-sky-500"
                       >
                         <StockIcon stock={stock} size="sm" />
-                        <span className="min-w-0">
+                        <span className="min-w-0 text-right">
                           <span className="block truncate font-black">{stock.symbol}</span>
                           <span className="block truncate text-xs font-semibold text-[color:var(--muted)]">
                             {stock.nameAr}
@@ -255,26 +263,26 @@ export function Dashboard() {
                       </Link>
                     </td>
 
-                    {/* السعر */}
-                    <td className={`number px-4 py-3 font-bold text-[color:var(--foreground)] transition-all ${flashCls}`}>
+                    {/* السعر — text-right يجعل الأرقام اللاتينية تتمحور يميناً */}
+                    <td className={`number px-4 py-3 text-right font-bold text-[color:var(--foreground)] transition-all ${flashCls}`}>
                       {formatCurrency(stock.prices.last)}
                     </td>
 
                     {/* التغير % */}
-                    <td className={`number px-4 py-3 font-black transition-all ${percentClass(stock.prices.changePercent)} ${flashCls}`}>
-                      <span className="inline-flex items-center gap-1">
+                    <td className={`number px-4 py-3 text-right font-black transition-all ${percentClass(stock.prices.changePercent)} ${flashCls}`}>
+                      <span className="inline-flex flex-row-reverse items-center gap-1">
                         {!isZero && (isUp ? "↗" : "↘")}
                         {formatPercent(stock.prices.changePercent)}
                       </span>
                     </td>
 
                     {/* مكرر الربحية */}
-                    <td className="number px-4 py-3 font-bold text-[color:var(--foreground)]">
+                    <td className="number px-4 py-3 text-right font-bold text-[color:var(--foreground)]">
                       {formatNumber(stock.fundamentals.pe)}
                     </td>
 
                     {/* قيمة التداول */}
-                    <td className="number px-4 py-3 font-bold text-[color:var(--foreground)]">
+                    <td className="number px-4 py-3 text-right font-bold text-[color:var(--foreground)]">
                       {formatCurrency(stock.prices.tradeValue)}
                     </td>
                   </tr>
