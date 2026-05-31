@@ -44,6 +44,41 @@ function startGlobalInterval() {
     const result = tickDataset(globalStocks, globalForceSim);
     globalStocks = result.stocks;
 
+    // Check and trigger active price alerts
+    if (typeof window !== "undefined") {
+      const savedAlerts = localStorage.getItem("emirati-capital:price-alerts");
+      if (savedAlerts) {
+        try {
+          const alerts = JSON.parse(savedAlerts) as any[];
+          let triggered = false;
+          const updatedAlerts = alerts.map((alert) => {
+            if (!alert.active) return alert;
+            const stock = globalStocks.find((s) => s.symbol === alert.symbol);
+            if (!stock) return alert;
+            const currentPrice = stock.prices.last;
+            let isTriggered = false;
+            if (alert.condition === "ABOVE" && currentPrice >= alert.targetPrice) {
+              isTriggered = true;
+            } else if (alert.condition === "BELOW" && currentPrice <= alert.targetPrice) {
+              isTriggered = true;
+            }
+            if (isTriggered) {
+              triggered = true;
+              const event = new CustomEvent("emirati-capital:alert-triggered", {
+                detail: { symbol: alert.symbol, price: currentPrice, target: alert.targetPrice },
+              });
+              window.dispatchEvent(event);
+              return { ...alert, active: false, triggeredAt: new Date().toISOString() };
+            }
+            return alert;
+          });
+          if (triggered) {
+            localStorage.setItem("emirati-capital:price-alerts", JSON.stringify(updatedAlerts));
+          }
+        } catch {}
+      }
+    }
+
     // إرسال الإشارة لكافة المكونات المسجلة للأسعار
     globalListeners.forEach((listener) => listener({ stocks: globalStocks, directions: result.directions }));
 

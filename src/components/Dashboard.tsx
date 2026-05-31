@@ -9,6 +9,8 @@ import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { StockIcon } from "@/components/StockIcon";
 import { formatCurrency, formatCurrencyFull, formatNumber, formatPercent, formatPlainPercent, percentClass } from "@/lib/format";
+import { useLanguage } from "@/context/languageContext";
+import { AlertManager } from "@/components/AlertManager";
 import {
   buildSmartAlerts,
   calculateFinancialHealthScore,
@@ -60,6 +62,7 @@ const globalIndices = [
 ];
 
 export function Dashboard() {
+  const { t, language } = useLanguage();
   const [selectedMarket, setSelectedMarket] = useState<MarketCode>("DFM");
   const [movementMode, setMovementMode] = useState<MovementMode>("gainers");
   
@@ -254,52 +257,62 @@ export function Dashboard() {
 
       <DashboardQuickActions />
 
-      <section className="fusion-panel rounded-2xl border-t-2 border-orange-500 p-4">
-        <SectionHeader
-          title="الفكرة"
-          subtitle="تقويم استحقاقات التوزيعات وأحداث الدفع"
-          action={<span className="text-sm font-black text-[color:var(--muted)]">May 2026</span>}
-        />
-        <div className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr]">
-          <div className="rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-strong)] p-3">
-            <div className="mb-2 grid grid-cols-7 text-center text-xs font-black text-[color:var(--muted)]">
-              {weekdays.map((day) => <span key={day}>{day}</span>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-sm">
-              {calendarDays.map((day, index) => (
-                <span
-                  key={`${day?.day ?? "blank"}-${index}`}
-                  className={`min-h-9 rounded-lg px-1 py-2 font-black ${
-                    day?.isToday ? "bg-orange-500 text-white" : day?.hasEvent ? "bg-orange-500/12 text-orange-500" : "text-[color:var(--muted)]"
-                  }`}
-                >
-                  {day?.day ?? ""}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-[color:var(--line)]">
-            <table className="w-full min-w-[620px] border-collapse text-sm">
-              <thead>
-                <tr className="text-[color:var(--muted)]">
-                  {["الشركة", "الحدث", "التاريخ", "المبلغ"].map((heading) => (
-                    <th key={heading} className="border-b border-[color:var(--line)] px-3 py-3 text-right font-black">{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {calendarEvents.slice(0, 8).map((event) => (
-                  <tr key={`${event.symbol}-${event.kind}-${event.date}`} className="border-b border-[color:var(--line)] last:border-0">
-                    <td className="px-3 py-3 font-black text-sky-500">{event.symbol}</td>
-                    <td className="px-3 py-3">{event.kind === "ex" ? "استبعاد" : "دفع"}</td>
-                    <td className="number px-3 py-3">{event.date}</td>
-                    <td className="number px-3 py-3">{formatCurrency(event.amount)}</td>
-                  </tr>
+      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="fusion-panel rounded-2xl border-t-2 border-orange-500 p-4">
+          <SectionHeader
+            title={language === "ar" ? "تقويم التوزيعات" : "Dividend Calendar"}
+            subtitle={language === "ar" ? "تقويم استحقاقات التوزيعات وأحداث الدفع" : "Dividend entitlements and payment events calendar"}
+            action={<span className="text-sm font-black text-[color:var(--muted)]">May 2026</span>}
+          />
+          <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-strong)] p-3">
+              <div className="mb-2 grid grid-cols-7 text-center text-xs font-black text-[color:var(--muted)]">
+                {weekdays.map((day) => <span key={day}>{day}</span>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-sm">
+                {calendarDays.map((day, index) => (
+                  <span
+                    key={`${day?.day ?? "blank"}-${index}`}
+                    className={`min-h-9 rounded-lg px-1 py-2 font-black ${
+                      day?.isToday ? "bg-orange-500 text-white" : day?.hasEvent ? "bg-orange-500/12 text-orange-500" : "text-[color:var(--muted)]"
+                    }`}
+                  >
+                    {day?.day ?? ""}
+                  </span>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-[color:var(--line)]">
+              <table className="w-full min-w-[380px] border-collapse text-sm">
+                <thead>
+                  <tr className="text-[color:var(--muted)]">
+                    {[
+                      language === "ar" ? "الشركة" : "Stock", 
+                      language === "ar" ? "الحدث" : "Event", 
+                      language === "ar" ? "التاريخ" : "Date", 
+                      language === "ar" ? "المبلغ" : "Amount"
+                    ].map((heading) => (
+                      <th key={heading} className="border-b border-[color:var(--line)] px-3 py-3 text-right font-black">{heading}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {calendarEvents.slice(0, 8).map((event) => (
+                    <tr key={`${event.symbol}-${event.kind}-${event.date}`} className="border-b border-[color:var(--line)] last:border-0 hover:bg-sky-500/5">
+                      <td className="px-3 py-2.5 font-black text-sky-500">{event.symbol}</td>
+                      <td className="px-3 py-2.5">{event.kind === "ex" ? (language === "ar" ? "استبعاد" : "Ex-Div") : (language === "ar" ? "دفع" : "Payout")}</td>
+                      <td className="number px-3 py-2.5">{event.date}</td>
+                      <td className="number px-3 py-2.5 font-bold">{formatCurrency(event.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+
+        {/* Live Target Alerts Panel */}
+        <AlertManager />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">

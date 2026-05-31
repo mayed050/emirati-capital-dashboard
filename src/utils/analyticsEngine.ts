@@ -333,3 +333,87 @@ function clamp(value: number, min: number, max: number): number {
 function round(value: number, digits = 2): number {
   return Number(value.toFixed(digits));
 }
+
+export function calculateSMA(prices: number[], period = 14): (number | null)[] {
+  const result: (number | null)[] = [];
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      result.push(null);
+    } else {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += prices[i - j];
+      }
+      result.push(round(sum / period, 3));
+    }
+  }
+  return result;
+}
+
+export function calculateEMA(prices: number[], period = 14): (number | null)[] {
+  const result: (number | null)[] = [];
+  const k = 2 / (period + 1);
+  let ema = 0;
+
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      result.push(null);
+    } else if (i === period - 1) {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += prices[i - j];
+      }
+      ema = sum / period;
+      result.push(round(ema, 3));
+    } else {
+      ema = prices[i] * k + ema * (1 - k);
+      result.push(round(ema, 3));
+    }
+  }
+  return result;
+}
+
+export function calculateRSI(prices: number[], period = 14): (number | null)[] {
+  const result: (number | null)[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
+
+  for (let i = 1; i < prices.length; i++) {
+    const diff = prices[i] - prices[i - 1];
+    gains.push(diff > 0 ? diff : 0);
+    losses.push(diff < 0 ? -diff : 0);
+  }
+
+  let avgGain = 0;
+  let avgLoss = 0;
+
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period) {
+      result.push(null);
+      if (i > 0 && i === period - 1) {
+        let sumGain = 0;
+        let sumLoss = 0;
+        for (let j = 0; j < period; j++) {
+          sumGain += gains[j];
+          sumLoss += losses[j];
+        }
+        avgGain = sumGain / period;
+        avgLoss = sumLoss / period;
+      }
+    } else {
+      const gain = gains[i - 1];
+      const loss = losses[i - 1];
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + loss) / period;
+
+      if (avgLoss === 0) {
+        result.push(100);
+      } else {
+        const rs = avgGain / avgLoss;
+        const rsi = 100 - 100 / (1 + rs);
+        result.push(round(rsi, 1));
+      }
+    }
+  }
+  return result;
+}
