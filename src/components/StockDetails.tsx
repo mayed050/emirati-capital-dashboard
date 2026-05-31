@@ -562,7 +562,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
                   />
                   {/* Filled Gauge */}
                   <circle
-                    stroke="url(#emeraldGradient)"
+                    stroke={`url(#emeraldGrad-${stock.symbol})`}
                     fill="transparent"
                     strokeWidth={strokeWidth}
                     strokeDasharray={circumference + " " + circumference}
@@ -573,7 +573,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
                     cy={radius}
                   />
                   <defs>
-                    <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id={`emeraldGrad-${stock.symbol}`} x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#34d399" />
                       <stop offset="100%" stopColor="#059669" />
                     </linearGradient>
@@ -775,7 +775,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
             </a>
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <p className="text-xs font-black text-slate-500">{language === "ar" ? "آخر تحديث للبيانات" : "Last Data Update"}</p>
-              <p className="mt-1 font-black text-slate-950">{formatDate(stock.prices.lastUpdated)}</p>
+              <p className="mt-1 font-black text-slate-950">{stock.prices.lastUpdated}</p>
             </div>
           </div>
         </div>

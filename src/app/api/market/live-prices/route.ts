@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stocksData } from "@/data/stocksData";
+import type { StockRecord } from "@/types";
 
 // Twelve Data API accepts comma-separated symbols
 // UAE DFM & ADX symbols are queried directly
@@ -50,8 +51,9 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       prices,
     });
-  } catch (error: any) {
-    console.error("Live Market API Error, falling back to simulation:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Live Market API Error, falling back to simulation:", message);
     return NextResponse.json({
       success: true,
       source: "simulation_fallback",
@@ -69,7 +71,7 @@ function generateSimulatedPrices(): Record<string, number> {
   return prices;
 }
 
-function generateSingleSimulatedPrice(stock: any): number {
+function generateSingleSimulatedPrice(stock: StockRecord): number {
   const current = stock.prices.last;
   // Subtle fluctuation between -0.2% and +0.25%
   const percentChange = (Math.random() * 0.45 - 0.2) / 100;

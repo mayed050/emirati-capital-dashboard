@@ -18,9 +18,10 @@ export interface PriceAlert {
 }
 
 export function playChime() {
-  if (typeof window === "undefined" || !window.AudioContext) return;
+  if (typeof window === "undefined") return;
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContextClass) return;
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AudioContextClass();
     
     // Create synthesizer node chains
@@ -52,12 +53,16 @@ export function AlertManager() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("emirati-capital:price-alerts");
-    if (saved) {
-      try {
-        setAlerts(JSON.parse(saved));
-      } catch {}
-    }
+    const loadAlerts = () => {
+      const saved = localStorage.getItem("emirati-capital:price-alerts");
+      if (saved) {
+        try { setAlerts(JSON.parse(saved)); } catch {}
+      }
+    };
+    loadAlerts();
+    // Re-sync when useLiveMarket triggers and deactivates an alert
+    window.addEventListener("emirati-capital:alert-triggered", loadAlerts);
+    return () => window.removeEventListener("emirati-capital:alert-triggered", loadAlerts);
   }, []);
 
   const saveAlerts = (updatedAlerts: PriceAlert[]) => {

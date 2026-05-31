@@ -73,11 +73,14 @@ export function Dashboard() {
     [overviewStocks, selectedMarket],
   );
   const marketSummary = useMemo(() => buildMarketSummary(marketStocks, selectedMarket), [marketStocks, selectedMarket]);
-  const alerts = buildSmartAlerts(overviewStocks).slice(0, 10);
-  const marketAlerts = buildSmartAlerts(marketStocks).slice(0, 3);
+  const alerts = useMemo(() => buildSmartAlerts(overviewStocks).slice(0, 10), [overviewStocks]);
+  const marketAlerts = useMemo(() => buildSmartAlerts(marketStocks).slice(0, 3), [marketStocks]);
   const movementRows = useMemo(() => buildMovementRows(marketStocks, movementMode), [marketStocks, movementMode]);
   const calendarEvents = useMemo(() => buildCalendarEvents(marketStocks), [marketStocks]);
-  const calendarDays = useMemo(() => buildCalendarDays(2026, 4, calendarEvents), [calendarEvents]);
+  const calendarDays = useMemo(() => {
+    const now = new Date();
+    return buildCalendarDays(now.getFullYear(), now.getMonth(), calendarEvents);
+  }, [calendarEvents]);
   const sectorData = useMemo(() => groupBySector(marketStocks), [marketStocks]);
   const topYields = useMemo(() => {
     return [...marketStocks]

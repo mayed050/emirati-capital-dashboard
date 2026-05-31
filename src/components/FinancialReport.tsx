@@ -96,7 +96,8 @@ export function FinancialReport() {
   return (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
       {/* Stylesheet specifically tailored for vector-grade PDF output */}
-      <style jsx global>{`
+      {/* NOTE: <style jsx global> is unsupported in Next.js App Router — using dangerouslySetInnerHTML instead */}
+      <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page {
             margin: 1.5cm;
@@ -156,7 +157,7 @@ export function FinancialReport() {
             print-color-adjust: exact !important;
           }
         }
-      `}</style>
+      ` }} />
 
       {/* Configuration & Filter Panel (HIDDEN IN PRINT) */}
       <section className="no-print fusion-panel rounded-2xl p-5 border-l-4 border-sky-500">

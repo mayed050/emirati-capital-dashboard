@@ -32,9 +32,10 @@ export default function OutlookPage() {
         const health = calculateFinancialHealthScore(stock);
         
         // Categorize trend mathematically based on score
+        // NOTE: getExpectedTrend score range is approx -5 to +8 (NOT 0-100)
         let category: TrendTab = "NEUTRAL";
-        if (trend.score >= 68) category = "BULLISH";
-        else if (trend.score < 50) category = "BEARISH";
+        if (trend.score >= 3) category = "BULLISH";
+        else if (trend.score < -1) category = "BEARISH";
 
         return { stock, trend, health, category };
       })

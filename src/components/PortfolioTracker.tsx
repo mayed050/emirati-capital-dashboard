@@ -89,12 +89,12 @@ export function PortfolioTracker() {
         setHoldings(restored);
         if (restored[0]?.symbol) setDripSymbol(restored[0].symbol);
       } catch {
-        setMessage(language === "ar" ? "تعذر قراءة بيانات المحفظة المخزنة محلياً." : "Failed to read local holdings data.");
+        setMessage("تعذر قراءة بيانات المحفظة المخزنة محلياً.");
       }
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [language]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally runs once on mount only
 
   useEffect(() => {
     if (!hydrated.current) return;

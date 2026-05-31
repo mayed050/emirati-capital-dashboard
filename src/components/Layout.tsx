@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   Calculator,
@@ -46,6 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { language, toggleLanguage, t } = useLanguage();
   const { isMarketOpen, forceSim, toggleForceSim } = useLiveMarket();
   const [toastAlert, setToastAlert] = useState<{ symbol: string; price: number; target: number } | null>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "dark";
     const saved = window.localStorage.getItem("emirati-capital:theme");
@@ -62,10 +63,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       const customEvent = e as CustomEvent;
       playChime();
       setToastAlert(customEvent.detail);
-      setTimeout(() => setToastAlert(null), 4500);
+      // Clear any existing timer before starting a new one (prevents race on multiple alerts)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToastAlert(null), 4500);
     };
     window.addEventListener("emirati-capital:alert-triggered", handleAlert);
-    return () => window.removeEventListener("emirati-capital:alert-triggered", handleAlert);
+    return () => {
+      window.removeEventListener("emirati-capital:alert-triggered", handleAlert);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
   }, []);
 
   const toggleTheme = () => setTheme((value) => (value === "dark" ? "light" : "dark"));
@@ -88,7 +94,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   : `Stock ${toastAlert.symbol} is currently trading at ${formatCurrency(toastAlert.price)} AED (Target was ${formatCurrency(toastAlert.target)} AED)!`}
               </p>
             </div>
-            <button onClick={() => setToastAlert(null)} className="text-white/80 hover:text-white font-bold">✕</button>
+            <button
+              onClick={() => setToastAlert(null)}
+              aria-label="Close alert"
+              className="text-white/80 hover:text-white font-bold"
+            >✕</button>
           </div>
         </div>
       )}

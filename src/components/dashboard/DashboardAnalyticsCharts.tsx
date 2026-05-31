@@ -1,18 +1,13 @@
 "use client";
 
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
-import { formatPlainPercent } from "@/lib/format";
+
 import { useLanguage } from "@/context/languageContext";
 
 type SectorDatum = {

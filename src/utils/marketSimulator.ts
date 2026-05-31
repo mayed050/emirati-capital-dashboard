@@ -70,8 +70,9 @@ export function tickSingleStock(stock: StockRecord, forceSim = false): {
       changePercent,
       high: Math.max(stock.prices.high, newPrice),
       low: Math.min(stock.prices.low, newPrice),
-      high52: Math.max(stock.prices.high52, newPrice),
-      low52: Math.min(stock.prices.low52, newPrice),
+      // high52/low52 are historical annual ranges — never update via simulator
+      high52: stock.prices.high52,
+      low52: stock.prices.low52,
       volume: stock.prices.volume + additionalVolume,
       tradeValue: Number((stock.prices.tradeValue + additionalValue).toFixed(2)),
       trades: stock.prices.trades + (Math.random() > 0.6 ? 1 : 0),

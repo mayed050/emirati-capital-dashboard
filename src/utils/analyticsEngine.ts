@@ -240,7 +240,7 @@ export function calculatePortfolioMetrics(holdings: PortfolioHolding[], stocks: 
   };
 }
 
-export function buildSmartAlerts(stocks: StockRecord[], referenceDate = "2026-05-29", holdings: PortfolioHolding[] = []): SmartAlert[] {
+export function buildSmartAlerts(stocks: StockRecord[], referenceDate = new Date().toISOString().slice(0, 10), holdings: PortfolioHolding[] = []): SmartAlert[] {
   const alerts: SmartAlert[] = [];
 
   for (const stock of stocks) {

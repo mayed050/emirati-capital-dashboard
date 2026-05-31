@@ -33,9 +33,9 @@ export function AllStocks() {
   const allLabel = isAr ? ALL : ALL_EN;
 
   const [query, setQuery] = useState("");
-  const [market, setMarket] = useState<MarketCode | typeof allLabel>(allLabel);
-  const [sector, setSector] = useState(allLabel);
-  const [health, setHealth] = useState<HealthBand | typeof allLabel>(allLabel);
+  const [market, setMarket] = useState<MarketCode | "ALL">("ALL");
+  const [sector, setSector] = useState("ALL");
+  const [health, setHealth] = useState<HealthBand | "ALL">("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("health");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
   
@@ -59,15 +59,15 @@ export function AllStocks() {
   };
 
   const availableSectors = useMemo(() => {
-    const marketStocks = market === allLabel ? stocks : stocks.filter((stock) => stock.market === market);
+    const marketStocks = market === "ALL" ? stocks : stocks.filter((stock) => stock.market === market);
     return Array.from(new Set(marketStocks.map((stock) => stock.sector))).sort((a, b) => a.localeCompare(b, isAr ? "ar" : "en"));
-  }, [market, stocks, allLabel, isAr]);
+  }, [market, stocks, isAr]);
 
   const rows = useMemo(() => {
     return stocks
-      .filter((stock) => market === allLabel || stock.market === market)
-      .filter((stock) => sector === allLabel || stock.sector === sector)
-      .filter((stock) => health === allLabel || calculateFinancialHealthScore(stock).band === health)
+      .filter((stock) => market === "ALL" || stock.market === market)
+      .filter((stock) => sector === "ALL" || stock.sector === sector)
+      .filter((stock) => health === "ALL" || calculateFinancialHealthScore(stock).band === health)
       .filter((stock) => {
         const q = query.trim().toLowerCase();
         if (!q) return true;
@@ -77,7 +77,7 @@ export function AllStocks() {
         const result = compare(valueForSort(a, sortKey), valueForSort(b, sortKey), isAr);
         return direction === "asc" ? result : -result;
       });
-  }, [query, market, sector, health, sortKey, direction, allLabel, stocks, isAr]);
+  }, [query, market, sector, health, sortKey, direction, stocks, isAr]);
 
   const heat = [...rows]
     .sort((a, b) => calculateFinancialHealthScore(b).score - calculateFinancialHealthScore(a).score)
@@ -138,25 +138,26 @@ export function AllStocks() {
             label={t("filterMarket")}
             value={market}
             onChange={(value) => {
-              setMarket(value as MarketCode | typeof allLabel);
-              setSector(allLabel);
+              setMarket(value as MarketCode | "ALL");
+              setSector("ALL");
             }}
-            options={[allLabel, "DFM", "ADX"]}
-            labels={{ ...marketLabels, [allLabel]: allLabel }}
+            options={["ALL", "DFM", "ADX"]}
+            labels={{ ...marketLabels, ALL: isAr ? "الكل" : "All" }}
           />
           <Select 
-            label={market === allLabel ? t("filterSector") : `${t("filterSector")} (${market})`} 
+            label={market === "ALL" ? t("filterSector") : `${t("filterSector")} (${market})`} 
             value={sector} 
-            onChange={setSector} 
-            options={[allLabel, ...availableSectors]} 
+            onChange={(v) => setSector(v)} 
+            options={["ALL", ...availableSectors]}
+            labels={{ ALL: isAr ? "الكل" : "All" }}
           />
           <Select 
             label={t("filterHealth")} 
             value={health} 
-            onChange={(value) => setHealth(value as HealthBand | typeof allLabel)} 
-            options={[allLabel, "ممتاز", "جيد", "متوازن", "تحت المراقبة"]} 
+            onChange={(value) => setHealth(value as HealthBand | "ALL")} 
+            options={["ALL", "ممتاز", "جيد", "متوازن", "تحت المراقبة"]} 
             labels={{
-              [allLabel]: allLabel,
+              ALL: isAr ? "الكل" : "All",
               "ممتاز": t("ممتاز"),
               "جيد": t("جيد"),
               "متوازن": t("متوازن"),
