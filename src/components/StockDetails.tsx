@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatCurrencyFull, formatDate, formatNumber, formatPercent, percentClass } from "@/lib/format";
 import { StockIcon } from "@/components/StockIcon";
+import { Badge } from "@/components/ui/Badge";
+import { MiniCard } from "@/components/ui/MiniCard";
 import {
   calculateDividendSustainability,
   calculateFinancialHealthScore,
@@ -308,9 +310,9 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
           <h2 className="text-xl font-black text-slate-950">نموذج القيمة العادلة الموجهة</h2>
         </div>
         <div className="grid grid-cols-3 gap-3 text-center">
-          <Mini label="القيمة المتحفظة (منخفض)" value={formatCurrency(stock.modelTarget.low)} />
-          <Mini label="القيمة المستهدفة (أساسي)" value={formatCurrency(stock.modelTarget.base)} />
-          <Mini label="القيمة المتفائلة (مرتفع)" value={formatCurrency(stock.modelTarget.high)} />
+          <MiniCard label="القيمة المتحفظة (منخفض)" value={formatCurrency(stock.modelTarget.low)} />
+          <MiniCard label="القيمة المستهدفة (أساسي)" value={formatCurrency(stock.modelTarget.base)} />
+          <MiniCard label="القيمة المتفائلة (مرتفع)" value={formatCurrency(stock.modelTarget.high)} />
         </div>
         <p className="mt-4 rounded-lg border border-sky-400/25 bg-sky-500/10 p-3 text-sm leading-7 text-slate-600">
           {stock.modelTarget.sourceNote} العائد المتوقع بناءً على سعر التقييم العادل المستهدف:{" "}
@@ -326,12 +328,12 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
       <section className="fusion-panel rounded-lg p-5">
         <h2 className="text-xl font-black text-slate-950 mb-4">المؤشرات المالية والنسب الأساسية</h2>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <Mini label="مكرر الربحية P/E" value={formatNumber(stock.fundamentals.pe)} />
-          <Mini label="ربحية السهم EPS" value={formatNumber(stock.fundamentals.eps)} />
-          <Mini label="العائد على الملكية ROE" value={formatPercent(stock.fundamentals.roe)} />
-          <Mini label="نمو الإيرادات" value={formatPercent(stock.fundamentals.revenueGrowth)} />
-          <Mini label="نمو الأرباح" value={formatPercent(stock.fundamentals.netProfitGrowth)} />
-          <Mini label="نسبة التوزيعات" value={formatPercent(stock.fundamentals.payoutRatio)} />
+          <MiniCard label="مكرر الربحية P/E" value={formatNumber(stock.fundamentals.pe)} />
+          <MiniCard label="ربحية السهم EPS" value={formatNumber(stock.fundamentals.eps)} />
+          <MiniCard label="العائد على الملكية ROE" value={formatPercent(stock.fundamentals.roe)} />
+          <MiniCard label="نمو الإيرادات" value={formatPercent(stock.fundamentals.revenueGrowth)} />
+          <MiniCard label="نمو الأرباح" value={formatPercent(stock.fundamentals.netProfitGrowth)} />
+          <MiniCard label="نسبة التوزيعات" value={formatPercent(stock.fundamentals.payoutRatio)} />
         </div>
       </section>
 
@@ -413,8 +415,8 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
-              <Badge>{stock.market}</Badge>
-              <Badge>{stock.sector}</Badge>
+              <Badge tone="slate">{stock.market}</Badge>
+              <Badge tone="slate">{stock.sector}</Badge>
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${healthClass(health.score)}`}>
                 صحة {health.band} · {health.score}/100
               </span>
@@ -530,17 +532,4 @@ function ChartPanel({ title, children }: { title: string; children: ReactNode })
       {children}
     </div>
   );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="number mt-1 font-black text-slate-950">{value}</p>
-    </div>
-  );
-}
-
-function Badge({ children }: { children: ReactNode }) {
-  return <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black text-slate-700">{children}</span>;
 }
