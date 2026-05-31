@@ -14,6 +14,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  ComposedChart,
 } from "recharts";
 import { 
   ArrowRight, 
@@ -71,21 +72,13 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
 
   // Tab contents rendering helper functions
   const renderOverview = () => (
-    <div className="view-fade grid gap-5">
-      {/* 4 Quick Metrics Overview */}
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Metric icon={<TrendingUp size={18} aria-hidden />} label="سعر السهم الحالي" value={formatCurrency(stock.prices.last)} hint={formatCurrencyFull(stock.prices.tradeValue)} />
-        <Metric icon={<Percent size={18} aria-hidden />} label="التغير اليومي" value={formatPercent(stock.prices.changePercent)} hint={formatCurrency(stock.prices.change)} tone={percentClass(stock.prices.changePercent)} />
-        <Metric icon={<Coins size={18} aria-hidden />} label="آخر توزيع نقدي" value={formatPercent(stock.fundamentals.dividendYield)} hint={dividend.rating} />
-        <Metric icon={<ShieldCheck size={18} aria-hidden />} label="اتجاه السهم المتوقع" value={trend.direction} hint={`درجة الأمان ${trend.score}`} />
-      </section>
-
-      {/* Primary Interactive Charts */}
-      <section className="fusion-panel rounded-lg p-5">
+    <div className="view-fade grid gap-5 xl:grid-cols-[1.8fr_1.2fr] xl:items-stretch">
+      {/* Right Column (2/3): Unified Interactive Price-Volume Chart */}
+      <section className="fusion-panel rounded-lg p-5 flex flex-col justify-between min-w-0">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-xl font-black text-slate-950">تطور حركة الأسعار والسيولة</h2>
-            <p className="mt-1 text-sm text-slate-500">مخططات بصرية متزامنة للتغير السعري وحجم التداول اليومي.</p>
+            <h2 className="text-xl font-black text-slate-950">شارت حركة السعر وحجم التداول</h2>
+            <p className="mt-1 text-xs text-slate-500">منحنى السعر التفصيلي مدمجاً مع حجم تداولات الجلسات اليومية في القاعدة.</p>
           </div>
           <div className="flex gap-2">
             {(["3M", "6M", "12M"] as const).map((item) => (
@@ -93,7 +86,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
                 key={item}
                 type="button"
                 onClick={() => setPeriod(item)}
-                className={`min-h-10 rounded-lg px-4 text-sm font-black transition-all ${
+                className={`min-h-9 rounded-lg px-3.5 text-xs font-black transition-all ${
                   period === item ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20" : "border border-white/10 bg-white/5 text-slate-700 hover:bg-sky-500/10"
                 }`}
               >
@@ -103,36 +96,79 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
-          <ChartPanel title="حركة الأسعار التفصيلية (درهم)">
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id={`priceFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.36} />
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatCurrency(Number(value))} />
-                <Area isAnimationActive={false} type="monotone" dataKey="price" name="السعر" stroke="#0ea5e9" strokeWidth={3} fill={`url(#priceFill-${stock.symbol})`} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+        <div className="w-full flex-1">
+          <ResponsiveContainer width="100%" height={340}>
+            <ComposedChart data={history} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`priceFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              
+              {/* Primary Y Axis for Price */}
+              <YAxis yAxisId="price" tick={{ fontSize: 10, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
+              
+              {/* Secondary Y Axis for Volume (Hidden to prevent clutter, domain scaled to keep bars at the bottom) */}
+              <YAxis yAxisId="volume" hide domain={[0, (dataMax: number) => dataMax * 4]} />
+              
+              <Tooltip 
+                contentStyle={tooltipStyle} 
+                formatter={(value, name) => {
+                  if (name === "السعر") return [formatCurrency(Number(value)), "السعر"];
+                  return [formatNumber(Number(value)), "الحجم"];
+                }} 
+              />
+              
+              {/* Price Area */}
+              <Area 
+                yAxisId="price" 
+                isAnimationActive={false} 
+                type="monotone" 
+                dataKey="price" 
+                name="السعر" 
+                stroke="#0ea5e9" 
+                strokeWidth={3} 
+                fill={`url(#priceFill-${stock.symbol})`} 
+              />
+              
+              {/* Volume Bars sitting elegantly in the bottom 25% of the chart */}
+              <Bar 
+                yAxisId="volume" 
+                isAnimationActive={false} 
+                dataKey="volume" 
+                name="الحجم" 
+                fill="#10b981" 
+                opacity={0.35} 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={30}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
 
-          <ChartPanel title="أحجام التداول والسيولة اليومية">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatNumber(Number(value))} />
-                <Bar isAnimationActive={false} dataKey="volume" name="الحجم" fill="#10b981" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+      {/* Left Column (1/3): Packed 2x2 Grid of Key Metrics */}
+      <section className="flex flex-col gap-4 justify-between min-w-0">
+        <div className="grid gap-3 grid-cols-2 flex-1">
+          <Metric icon={<TrendingUp size={16} aria-hidden />} label="سعر السهم الحالي" value={formatCurrency(stock.prices.last)} hint={formatCurrencyFull(stock.prices.tradeValue)} />
+          <Metric icon={<Percent size={16} aria-hidden />} label="التغير اليومي" value={formatPercent(stock.prices.changePercent)} hint={formatCurrency(stock.prices.change)} tone={percentClass(stock.prices.changePercent)} />
+          <Metric icon={<Coins size={16} aria-hidden />} label="آخر عائد نقدي" value={formatPercent(stock.fundamentals.dividendYield)} hint={dividend.rating} />
+          <Metric icon={<ShieldCheck size={16} aria-hidden />} label="اتجاه السهم" value={trend.direction} hint={`درجة الأمان ${trend.score}`} />
+        </div>
+        
+        {/* Quick Sector Profile Info Card */}
+        <div className="fusion-panel rounded-lg p-4 flex-1 flex flex-col justify-center">
+          <h3 className="text-sm font-black text-slate-950 flex items-center gap-2 mb-2">
+            <Building2 size={16} className="text-sky-500" />
+            الملف القطاعي للشركة
+          </h3>
+          <p className="text-xs text-slate-500 leading-5">
+            تنشط شركة <strong className="text-slate-900">{stock.nameAr}</strong> في قطاع <strong className="text-slate-900">{stock.sector}</strong>. 
+            تبلغ القيمة السوقية الإجمالية للمؤسسة <strong className="text-slate-900">{formatCurrencyFull(stock.prices.marketCap)}</strong>، وتعتبر من الكيانات القيادية ذات الصحة المتوازنة المصنفة بدرجة <strong className="text-sky-600">{health.score}/100</strong>.
+          </p>
         </div>
       </section>
     </div>
