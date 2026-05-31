@@ -154,7 +154,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
         <div className="w-full flex-1 flex flex-col justify-between">
           <div className="flex-1">
             <ResponsiveContainer width="100%" height={showRSI ? 240 : 340}>
-              <ComposedChart data={historyWithIndicators} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <ComposedChart data={historyWithIndicators} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id={`priceFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
@@ -165,7 +165,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
                 
                 {/* Primary Y Axis for Price */}
-                <YAxis yAxisId="price" tick={{ fontSize: 10, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="price" width={35} tick={{ fontSize: 10, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
                 
                 {/* Secondary Y Axis for Volume (domain scaled to keep bars at the bottom) */}
                 <YAxis yAxisId="volume" hide domain={[0, (dataMax: number) => dataMax * 4]} />
@@ -458,90 +458,276 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
     </div>
   );
 
-  const renderFinancials = () => (
-    <div className="view-fade grid gap-5">
-      {/* 2x3 Grid of Fundamental Metrics */}
-      <section className="fusion-panel rounded-lg p-5">
-        <h2 className="text-xl font-black text-slate-950 mb-4">المؤشرات المالية والنسب الأساسية</h2>
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <MiniCard label="مكرر الربحية P/E" value={formatNumber(stock.fundamentals.pe)} />
-          <MiniCard label="ربحية السهم EPS" value={formatNumber(stock.fundamentals.eps)} />
-          <MiniCard label="العائد على الملكية ROE" value={formatPercent(stock.fundamentals.roe)} />
-          <MiniCard label="نمو الإيرادات" value={formatPercent(stock.fundamentals.revenueGrowth)} />
-          <MiniCard label="نمو الأرباح" value={formatPercent(stock.fundamentals.netProfitGrowth)} />
-          <MiniCard label="نسبة التوزيعات" value={formatPercent(stock.fundamentals.payoutRatio)} />
-        </div>
-      </section>
+  const renderFinancials = () => {
+    const netMarginPercent = stock.fundamentals.netMargin * 100;
+    const expensesPercent = 100 - netMarginPercent;
+    
+    // SVG Circular Gauge configurations
+    const radius = 50;
+    const strokeWidth = 8;
+    const normalizedRadius = radius - strokeWidth;
+    const circumference = normalizedRadius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (Math.min(Math.max(netMarginPercent, 0), 100) / 100) * circumference;
 
-      {/* Revenue vs Net Profit Comparative Chart */}
-      <section className="fusion-panel rounded-lg p-5">
-        <div className="mb-4">
-          <h2 className="text-xl font-black text-slate-950">مقارنة الإيرادات التاريخية وصافي الربح المحقق</h2>
-          <p className="text-sm text-slate-500 mt-1">يظهر كفاءة التشغيل وقدرة الشركة على تحويل المبيعات لصافي تدفق نقدي مربح للمساهمين.</p>
-        </div>
-        <div className="w-full">
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={[{ label: "آخر 12 شهر (TTM)", revenue: stock.fundamentals.revenueAED, profit: stock.fundamentals.netProfitAED }]} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatCurrencyFull(Number(value))} />
-              <Bar isAnimationActive={false} dataKey="revenue" name="إجمالي الإيرادات" fill="#0ea5e9" radius={[8, 8, 0, 0]} maxBarSize={120} />
-              <Bar isAnimationActive={false} dataKey="profit" name="صافي الأرباح المحققة" fill="#10b981" radius={[8, 8, 0, 0]} maxBarSize={120} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-    </div>
-  );
-
-  const renderDividends = () => (
-    <div className="view-fade grid gap-5">
-      {/* Sustainability and Payout Summary */}
-      <section className="grid gap-3 md:grid-cols-2">
-        <div className="interactive-card fusion-panel rounded-lg p-5">
-          <div className="mb-3 inline-grid h-10 w-10 place-items-center rounded-lg bg-sky-500/15 text-sky-500">
-            <Coins size={20} />
+    return (
+      <div className="view-fade grid gap-5">
+        {/* 2x3 Grid of Fundamental Metrics */}
+        <section className="fusion-panel rounded-lg p-5">
+          <h2 className="text-xl font-black text-slate-950 mb-4">
+            {language === "ar" ? "المؤشرات المالية والنسب الأساسية" : "Key Financial Metrics & Ratios"}
+          </h2>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            <MiniCard label={language === "ar" ? "مكرر الربحية P/E" : "P/E Ratio"} value={formatNumber(stock.fundamentals.pe)} />
+            <MiniCard label={language === "ar" ? "ربحية السهم EPS" : "Earnings Per Share (EPS)"} value={formatNumber(stock.fundamentals.eps)} />
+            <MiniCard label={language === "ar" ? "العائد على الملكية ROE" : "Return on Equity (ROE)"} value={formatPercent(stock.fundamentals.roe)} />
+            <MiniCard label={language === "ar" ? "نمو الإيرادات" : "Revenue Growth"} value={formatPercent(stock.fundamentals.revenueGrowth)} />
+            <MiniCard label={language === "ar" ? "نمو الأرباح" : "Profit Growth"} value={formatPercent(stock.fundamentals.netProfitGrowth)} />
+            <MiniCard label={language === "ar" ? "نسبة التوزيعات" : "Payout Ratio"} value={formatPercent(stock.fundamentals.payoutRatio)} />
           </div>
-          <p className="text-xs font-black text-slate-500">
-            {language === "ar" ? "عائد التوزيعات النقدية السنوي" : "Annual Dividend Yield"}
-          </p>
-          <p className="number mt-2 text-2xl font-black text-slate-950">{formatPercent(stock.fundamentals.dividendYield)}</p>
-          <p className="mt-2 text-xs font-bold text-slate-500">
-            {language === "ar" ? "طريقة التوزيع: نصف سنوي" : "Frequency: Semi-annual"}
-          </p>
-        </div>
+        </section>
 
-        <div className="interactive-card fusion-panel rounded-lg p-5">
-          <div className="mb-3 inline-grid h-10 w-10 place-items-center rounded-lg bg-emerald-500/15 text-emerald-500">
-            <ShieldCheck size={20} />
+        {/* Operating Structure & Net Profit Margin Flow Dashboard */}
+        <section className="fusion-panel rounded-lg p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-black text-slate-950">
+              {language === "ar" ? "الهيكل التشغيلي وصافي الهامش المالي" : "Operating Structure & Net Profit Margin"}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {language === "ar" 
+                ? "تحليل تدفق الإيرادات وكفاءة تحويل المبيعات لصافي تدفق نقدي مربح للمساهمين."
+                : "Operational flow showing how much revenue converts to clean, bottom-line earnings."}
+            </p>
           </div>
-          <p className="text-xs font-black text-slate-500">تقييم استدامة التوزيعات النقدية</p>
-          <p className="number mt-2 text-2xl font-black text-slate-950">{dividend.rating}</p>
-          <p className="mt-2 text-xs font-bold text-slate-500">نسبة التغطية النقدية: {formatPercent(stock.fundamentals.payoutRatio)}</p>
-        </div>
-      </section>
 
-      {/* Historical Dividend Yield Trend Chart */}
-      <section className="fusion-panel rounded-lg p-5">
-        <div className="mb-4">
-          <h2 className="text-xl font-black text-slate-950">تاريخ توزيعات الأرباح النقدية للمساهمين</h2>
-          <p className="text-sm text-slate-500 mt-1">يظهر مسار نمو وتوزيع الأرباح السنوية عبر السنوات المالية السابقة للشركة.</p>
-        </div>
-        <div className="w-full">
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={stock.historicalDividends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
-              <XAxis dataKey="fiscalYear" tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatCurrency(Number(value))} />
-              <Line isAnimationActive={false} type="monotone" dataKey="amount" name="مبلغ التوزيع الموزع (درهم)" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 5, fill: "#0ea5e9" }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-    </div>
-  );
+          <div className="grid gap-6 md:grid-cols-[1.5fr_1fr] items-center">
+            {/* Left: Flow Bar Stacked Progress */}
+            <div className="flex flex-col gap-5">
+              <div>
+                <div className="flex justify-between text-xs font-bold mb-2">
+                  <span className="text-slate-500">{language === "ar" ? "إجمالي الإيرادات (TTM)" : "Total Revenue (TTM)"}</span>
+                  <span className="text-slate-950 font-black">{stock.fundamentals.revenueDisplay} AED</span>
+                </div>
+                {/* Visual Stacked Progress Bar */}
+                <div className="h-7 w-full rounded-lg overflow-hidden bg-slate-100 flex shadow-inner border border-slate-200">
+                  <div 
+                    style={{ width: `${Math.max(netMarginPercent, 5)}%` }} 
+                    className="bg-emerald-500 transition-all duration-500 relative group flex items-center justify-center text-[10px] font-black text-white"
+                    title={language === "ar" ? "صافي الربح" : "Net Profit"}
+                  >
+                    <span>{netMarginPercent.toFixed(0)}%</span>
+                  </div>
+                  <div 
+                    style={{ width: `${Math.max(expensesPercent, 5)}%` }} 
+                    className="bg-sky-500 transition-all duration-500 relative group flex items-center justify-center text-[10px] font-black text-white"
+                    title={language === "ar" ? "تكاليف ومصاريف تشغيلية" : "Expenses & Costs"}
+                  >
+                    <span>{expensesPercent.toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legends and Metrics Card */}
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-3 flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded bg-emerald-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{language === "ar" ? "صافي الأرباح المحققة" : "Net Profit (TTM)"}</p>
+                    <p className="number mt-1 text-sm font-black text-emerald-700">{stock.fundamentals.netProfitDisplay} AED</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-sky-500/10 bg-sky-500/5 p-3 flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded bg-sky-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500">{language === "ar" ? "إجمالي التكاليف والمصاريف" : "Total Operating Costs"}</p>
+                    <p className="number mt-1 text-sm font-black text-sky-700">
+                      {formatCurrencyFull(stock.fundamentals.revenueAED - stock.fundamentals.netProfitAED)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: SVG Circular Margin Gauge */}
+            <div className="flex flex-col items-center justify-center border-t border-slate-100 pt-5 md:border-t-0 md:border-inline-start md:border-slate-100 md:pt-0">
+              <div className="relative flex items-center justify-center h-28 w-28">
+                <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
+                  {/* Background Track */}
+                  <circle
+                    stroke="rgba(148, 163, 184, 0.12)"
+                    fill="transparent"
+                    strokeWidth={strokeWidth}
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                  />
+                  {/* Filled Gauge */}
+                  <circle
+                    stroke="url(#emeraldGradient)"
+                    fill="transparent"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference + " " + circumference}
+                    style={{ strokeDashoffset }}
+                    strokeLinecap="round"
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                  />
+                  <defs>
+                    <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {/* Centered Percentage Score */}
+                <div className="absolute text-center select-none">
+                  <p className="text-lg font-black text-slate-900 leading-none">{netMarginPercent.toFixed(1)}%</p>
+                  <p className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-wider">
+                    {language === "ar" ? "هامش صافي" : "Net Margin"}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 text-center text-[11px] font-bold text-slate-500 max-w-[200px] leading-5">
+                {language === "ar"
+                  ? `تحتفظ الشركة بـ ${netMarginPercent.toFixed(0)}% كأرباح صافية من كل درهم إيراد تحققه.`
+                  : `The company retains ${netMarginPercent.toFixed(0)}% of every dirham earned as clean profit.`}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Extra Cash Flow Comparative Cards */}
+        <section className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-black text-slate-500">
+              {language === "ar" ? "التدفق النقدي التشغيلي (Operating Cash Flow)" : "Operating Cash Flow"}
+            </p>
+            <p className="number mt-2 text-xl font-black text-slate-900">{formatCurrencyFull(stock.fundamentals.operatingCashFlowAED)}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <p className="text-xs font-black text-slate-500">
+              {language === "ar" ? "التدفق النقدي الحر (Free Cash Flow)" : "Free Cash Flow"}
+            </p>
+            <p className="number mt-2 text-xl font-black text-slate-900">{formatCurrencyFull(stock.fundamentals.freeCashFlowAED)}</p>
+          </div>
+        </section>
+      </div>
+    );
+  };
+
+  const renderDividends = () => {
+    const hasHistory = stock.historicalDividends && stock.historicalDividends.length >= 2;
+
+    return (
+      <div className="view-fade grid gap-5">
+        {/* Sustainability and Payout Summary */}
+        <section className="grid gap-3 md:grid-cols-2">
+          <div className="interactive-card fusion-panel rounded-lg p-5">
+            <div className="mb-3 inline-grid h-10 w-10 place-items-center rounded-lg bg-sky-500/15 text-sky-500">
+              <Coins size={20} />
+            </div>
+            <p className="text-xs font-black text-slate-500">
+              {language === "ar" ? "عائد التوزيعات النقدية السنوي" : "Annual Dividend Yield"}
+            </p>
+            <p className="number mt-2 text-2xl font-black text-slate-950">{formatPercent(stock.fundamentals.dividendYield)}</p>
+            <p className="mt-2 text-xs font-bold text-slate-500">
+              {language === "ar" ? "طريقة التوزيع: نصف سنوي" : "Frequency: Semi-annual"}
+            </p>
+          </div>
+
+          <div className="interactive-card fusion-panel rounded-lg p-5">
+            <div className="mb-3 inline-grid h-10 w-10 place-items-center rounded-lg bg-emerald-500/15 text-emerald-500">
+              <ShieldCheck size={20} />
+            </div>
+            <p className="text-xs font-black text-slate-500">
+              {language === "ar" ? "تقييم استدامة التوزيعات النقدية" : "Dividend Sustainability Rating"}
+            </p>
+            <p className="number mt-2 text-2xl font-black text-slate-950">{dividend.rating}</p>
+            <p className="mt-2 text-xs font-bold text-slate-500">
+              {language === "ar" ? `نسبة التغطية النقدية: ${formatPercent(stock.fundamentals.payoutRatio)}` : `Cash Payout Ratio: ${formatPercent(stock.fundamentals.payoutRatio)}`}
+            </p>
+          </div>
+        </section>
+
+        {/* Historical Dividend Yield Trend Chart or Fallback */}
+        <section className="fusion-panel rounded-lg p-5">
+          <div className="mb-4">
+            <h2 className="text-xl font-black text-slate-950">
+              {language === "ar" ? "تاريخ توزيعات الأرباح النقدية للمساهمين" : "Historical Dividend Payout Track"}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {language === "ar"
+                ? "يظهر مسار نمو وتوزيع الأرباح السنوية عبر السنوات المالية السابقة للشركة."
+                : "Visual track of annual dividend distributions across prior fiscal years."}
+            </p>
+          </div>
+          
+          <div className="w-full">
+            {hasHistory ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={stock.historicalDividends} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id={`divFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+                  <XAxis dataKey="fiscalYear" tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+                  <YAxis width={35} tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value) => [formatCurrency(Number(value)), language === "ar" ? "التوزيع" : "Dividend"]} />
+                  <Area 
+                    isAnimationActive={false} 
+                    type="monotone" 
+                    dataKey="amount" 
+                    name={language === "ar" ? "مبلغ التوزيع (درهم)" : "Amount (AED)"} 
+                    stroke="#10b981" 
+                    strokeWidth={3} 
+                    fill={`url(#divFill-${stock.symbol})`}
+                    dot={{ r: 4, fill: "#10b981", strokeWidth: 1 }} 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              /* High-fidelity Bilingual Payout Timeline Fallback */
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">
+                      {language === "ar" ? "📅 تفاصيل وجدول التوزيع الحالي" : "📅 Current Dividend Payout Timeline"}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {language === "ar"
+                        ? "سلسلة التوزيع التاريخي الممتدة تحت التحديث. إليك التواريخ المستهدفة لآخر كوبون معتمد."
+                        : "Historical extended series under update. Listed below are current distribution targets."}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2.5 py-1">
+                    {language === "ar" ? "توزيع نشط معتمد" : "Active Confirmed Coupon"}
+                  </span>
+                </div>
+                
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mt-5">
+                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
+                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "آخر كوبون مدفوع" : "Last Amount Paid"}</p>
+                    <p className="number text-lg font-black text-slate-900 mt-1">{formatCurrency(stock.dividend.lastAmount)}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
+                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "تاريخ الاستحقاق" : "Entitlement Date"}</p>
+                    <p className="number text-sm font-black text-slate-900 mt-1">{formatDate(stock.dividend.entitlementDate)}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
+                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "تاريخ التوزيع الفعلي" : "Payment Date"}</p>
+                    <p className="number text-sm font-black text-slate-900 mt-1">{formatDate(stock.dividend.paymentDate)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  };
 
   return (
     <div className="view-fade grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
