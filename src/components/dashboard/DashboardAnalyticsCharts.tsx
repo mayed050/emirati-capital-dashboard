@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatPlainPercent } from "@/lib/format";
+import { useLanguage } from "@/context/languageContext";
 
 type SectorDatum = {
   name: string;
@@ -33,9 +34,11 @@ export function DashboardAnalyticsCharts({
   sectorData: SectorDatum[];
   topYields: YieldDatum[];
 }) {
+  const { language } = useLanguage();
+
   return (
     <section className="grid gap-4 xl:grid-cols-2">
-      <ChartPanel title="توزيع القطاعات">
+      <ChartPanel title={language === "ar" ? "توزيع القطاعات" : "Sector Distribution"}>
         <ResponsiveContainer width="100%" height={285}>
           <PieChart>
             <Pie data={sectorData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={98} paddingAngle={2} isAnimationActive={false}>
@@ -43,13 +46,13 @@ export function DashboardAnalyticsCharts({
                 <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value, name) => [`${value} أسهم`, name]} />
+            <Tooltip formatter={(value, name) => [language === "ar" ? `${value} أسهم` : `${value} Stocks`, name]} />
           </PieChart>
         </ResponsiveContainer>
         <Legend data={sectorData} />
       </ChartPanel>
 
-      <ChartPanel title="أعلى العوائد النقدية للقادة (%)">
+      <ChartPanel title={language === "ar" ? "أعلى العوائد النقدية للقادة (%)" : "Top Dividend Yields of Leaders (%)"}>
         <ResponsiveContainer width="100%" height={285}>
           <BarChart data={topYields} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.24)" />

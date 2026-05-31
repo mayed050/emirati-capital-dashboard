@@ -78,14 +78,18 @@ export function Dashboard() {
   const movementRows = useMemo(() => buildMovementRows(marketStocks, movementMode), [marketStocks, movementMode]);
   const calendarEvents = useMemo(() => buildCalendarEvents(marketStocks), [marketStocks]);
   const calendarDays = useMemo(() => buildCalendarDays(2026, 4, calendarEvents), [calendarEvents]);
-  const sectorData = groupBySector(overviewStocks);
-  const topYields = [...overviewStocks]
-    .sort((a, b) => b.fundamentals.dividendYield - a.fundamentals.dividendYield)
-    .slice(0, 8)
-    .map((stock) => ({ symbol: stock.symbol, yield: Number(stock.fundamentals.dividendYield.toFixed(2)) }));
-  const healthRows = overviewStocks
-    .map((stock) => ({ stock, health: calculateFinancialHealthScore(stock), trend: getExpectedTrend(stock) }))
-    .sort((a, b) => b.health.score - a.health.score);
+  const sectorData = useMemo(() => groupBySector(marketStocks), [marketStocks]);
+  const topYields = useMemo(() => {
+    return [...marketStocks]
+      .sort((a, b) => b.fundamentals.dividendYield - a.fundamentals.dividendYield)
+      .slice(0, 8)
+      .map((stock) => ({ symbol: stock.symbol, yield: Number(stock.fundamentals.dividendYield.toFixed(2)) }));
+  }, [marketStocks]);
+  const healthRows = useMemo(() => {
+    return marketStocks
+      .map((stock) => ({ stock, health: calculateFinancialHealthScore(stock), trend: getExpectedTrend(stock) }))
+      .sort((a, b) => b.health.score - a.health.score);
+  }, [marketStocks]);
   const leaderDfmCount = unifiedMarket.counts.dfmLeaders;
   const leaderAdxCount = unifiedMarket.counts.adxLeaders;
   const extraWatchlistCount = unifiedMarket.counts.extraWatchlist;
