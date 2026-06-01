@@ -41,8 +41,8 @@ const dailyPriceOverrides = dailyOverrides.quotes ?? {};
 const modelSource =
   "نطاقات القيمة والسلاسل التاريخية الممتدة مشتقة داخليا من لقطة 2026-05-29، وليست تغطية محللين أو أسعارا حية.";
 
-const dfmLeaderSource = "DFM Daily Bulletin 2026-05-25";
-const adxLeaderSource = "StockAnalysis ADX list and latest history accessed 2026-05-29";
+const dfmLeaderSource = "DFM Daily Bulletin — June 1, 2026 (أول جلسة بعد عيد الأضحى)";
+const adxLeaderSource = "ADX Market Data — June 1, 2026 (أول جلسة بعد عيد الأضحى)";
 
 const coreSeeds: StockSeed[] = [
   {
@@ -590,12 +590,12 @@ export const marketLeaderStocks: StockRecord[] = stocksData
 export const DATASET_INFO = {
   brandAr: "منصة الأسهم الإماراتية",
   brandEn: "UAE Stocks Platform",
-  snapshotDate: "2026-05-29",
+  snapshotDate: "2026-06-01",
   dailyOverrideUpdatedAt: dailyOverrides.updatedAt ?? null,
   dailyOverrideSource: dailyOverrides.source ?? null,
-  dfmSessionDate: "2026-05-25",
-  adxSessionDate: "2026-05-25",
-  mode: "لقطة ثابتة لقادة سوقي دبي وأبوظبي وليست أسعارا حية",
+  dfmSessionDate: "2026-06-01",
+  adxSessionDate: "2026-06-01",
+  mode: "أول جلسة بعد عيد الأضحى — 1 يونيو 2026 — بيانات لقطة حية جزئية مدعومة بمحاكاة الأسعار",
   coverageNote:
     "تغطي أفضل 20 سهما في DFM وأفضل 20 سهما في ADX وفق رتبة مركبة بين القيمة السوقية وقيمة التداول اليومية، مع إبقاء TECOM وNMDCENR وADNIC من قائمة المتابعة الأصلية.",
   disclaimer:
