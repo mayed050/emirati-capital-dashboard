@@ -9,6 +9,7 @@
     "lint": "eslint",
     "validate:data": "tsx scripts/validate-data.ts",
     "update:data": "tsx scripts/update-market-data.ts",
+    "start:daemon": "tsx scripts/live-daemon.ts",
     "quality": "npm run validate:data && npm run lint && npm run build"
   },
   "dependencies": {

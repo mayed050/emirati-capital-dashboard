@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { isGstMarketOpen } from "@/utils/marketSimulator";
 
+export const dynamic = "force-dynamic";
+
 export function GET() {
   try {
     const market = getUnifiedMarketDataset();

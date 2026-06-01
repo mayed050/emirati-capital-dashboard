@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { TickerTape } from "@/components/TickerTape";
 
-import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { LiveSyncControl } from "@/components/dashboard/LiveSyncControl";
 import { useLanguage } from "@/context/languageContext";
 import { playChime } from "@/components/AlertManager";
 import { formatCurrency } from "@/lib/format";
@@ -44,7 +44,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { language, toggleLanguage, t } = useLanguage();
-  const { isMarketOpen, forceSim, toggleForceSim } = useLiveMarket();
   const [toastAlert, setToastAlert] = useState<{ symbol: string; price: number; target: number } | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
@@ -164,24 +163,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <LangButton language={language} onClick={toggleLanguage} />
           </div>
 
-          <div className="mt-6 rounded-lg border border-[color:var(--line)] bg-[color:var(--surface-strong)] p-4 text-sm leading-7">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-black text-[color:var(--foreground)]">{t("liveMarketFeed")}</span>
-              <div className="flex items-center gap-1.5">
-                <span className={`inline-block h-2 w-2 rounded-full ${isMarketOpen || forceSim ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                <span className="text-xs font-black">
-                  {isMarketOpen ? t("marketOpen") : forceSim ? t("simActive") : t("marketClosed")}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={toggleForceSim}
-              className={`mt-3 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-black transition ${
-                forceSim ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[color:var(--chip)] text-[color:var(--foreground)] hover:bg-[color:var(--line)]"
-              }`}
-            >
-              {forceSim ? t("stopSim") : t("startSim")}
-            </button>
+          <div className="mt-6">
+            <LiveSyncControl />
           </div>
 
           <div className="liability-box mt-6 rounded-lg p-4 text-sm leading-7">
