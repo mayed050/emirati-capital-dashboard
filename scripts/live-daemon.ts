@@ -150,10 +150,65 @@ async function syncMarketData() {
     }
   } else {
     // ----------------------------------------------------
-    // Option B: High-Fidelity Simulation Daemon
+    // Option B: Free Yahoo Finance (DFM) + Simulation (ADX) Hybrid
     // ----------------------------------------------------
-    updatedQuotes = generateSimulatedQuotes(existingQuotes, now);
-    console.log(`${GREEN}✔ Simulated quote tick computed statefully!${RESET}`);
+    console.log(`${CYAN}No Twelve Data API Key. Initiating free Yahoo Finance Live Sync for DFM stocks...${RESET}`);
+
+    // Generate base quotes from simulation, then overwrite DFM stocks with real Yahoo Finance quotes
+    const simulated = generateSimulatedQuotes(existingQuotes, now);
+    const dfmStocks = stocksData.filter((s) => s.market === "DFM");
+    let yahooMatchedCount = 0;
+
+    for (const stock of dfmStocks) {
+      const ticker = `${stock.symbol}.AE`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+        });
+        if (res.status === 200) {
+          const data = await res.json() as any;
+          const meta = data.chart?.result?.[0]?.meta || {};
+          const livePrice = meta.regularMarketPrice;
+          const prevClose = meta.previousClose ?? stock.prices.previousClose;
+
+          if (livePrice !== undefined) {
+            const prevQuote = existingQuotes[stock.symbol];
+            const change = Number((livePrice - prevClose).toFixed(4));
+            const changePercent = Number(((change / prevClose) * 100).toFixed(4));
+            const currentVol = meta.regularMarketVolume ?? (prevQuote?.volume ?? stock.prices.volume);
+            const currentVal = Number(((prevQuote?.tradeValue ?? stock.prices.tradeValue) + (currentVol * livePrice * 0.0001)).toFixed(2));
+
+            simulated[stock.symbol] = {
+              last: livePrice,
+              previousClose: prevClose,
+              change,
+              changePercent,
+              high: meta.regularMarketDayHigh ?? Math.max(prevQuote?.high ?? livePrice, livePrice),
+              low: meta.regularMarketDayLow ?? Math.min(prevQuote?.low ?? livePrice, livePrice),
+              high52: prevQuote?.high52 ?? stock.prices.high52,
+              low52: prevQuote?.low52 ?? stock.prices.low52,
+              volume: currentVol,
+              tradeValue: currentVal,
+              trades: (prevQuote?.trades ?? stock.prices.trades) + Math.floor(Math.random() * 20) + 2,
+              marketCap: Number((stock.prices.marketCap * (livePrice / stock.prices.last)).toFixed(2)),
+              lastUpdated: now.toISOString().slice(0, 10),
+              source: "Yahoo Finance Free Chart Live"
+            };
+            yahooMatchedCount++;
+          }
+        }
+      } catch (e) {
+        // Silent fallback to simulation for this symbol
+      }
+    }
+
+    updatedQuotes = simulated;
+    sourceLabel = `Yahoo Finance Live (DFM: ${yahooMatchedCount}/20) + Simulation (ADX)`;
+    console.log(`${GREEN}✔ Free live DFM sync completed! Synced ${yahooMatchedCount} DFM stocks from Yahoo Finance.${RESET}`);
   }
 
   // Write payload
