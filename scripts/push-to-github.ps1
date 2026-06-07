@@ -1,64 +1,64 @@
-# Sync script for pushing changes to your GitHub repository
-# Automatically changes location to the project root directory
-$RepoUrl = "https://github.com/mayed050/emirati-capital-dashboard.git"
+param(
+    [string]$Remote = "origin",
+    [string]$Branch = "main"
+)
+
+$ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-if (![string]::IsNullOrEmpty($ScriptDir)) {
-    Set-Location (Split-Path -Parent $ScriptDir)
+$RepoRoot = Split-Path -Parent $ScriptDir
+$LogFile = Join-Path $RepoRoot ".git\auto-sync.log"
+
+function Write-Log {
+    param([string]$Message)
+    $Line = "[{0}] {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ssK"), $Message
+    Write-Host $Line
+    Add-Content -Path $LogFile -Value $Line
 }
 
-Write-Host "=== Start Syncing Changes to GitHub ===" -ForegroundColor Cyan
+Set-Location $RepoRoot
 
-# Check if Git is installed
 if (!(Get-Command git -ErrorAction SilentlyContinue)) {
-    Write-Host "[-] Git is not found in your environment PATH." -ForegroundColor Red
-    Write-Host "[!] Please install Git or ensure it is added to your PATH variables." -ForegroundColor Yellow
-    exit 1
+    throw "Git is not available in PATH."
 }
 
-# Initialize local git repository if not done
-if (!(Test-Path .git)) {
-    Write-Host "[*] Initializing local Git repository..." -ForegroundColor Yellow
-    git init
-    git branch -M main
+if (!(Test-Path ".git")) {
+    throw "This script must run inside an existing Git repository."
 }
 
-# Ensure Git user config exists for this repository
-$GitUser = git config user.name
-$GitEmail = git config user.email
-if ([string]::IsNullOrEmpty($GitUser)) {
-    Write-Host "[*] Configuring local Git user name..." -ForegroundColor Yellow
-    git config user.name "mayed050"
-}
-if ([string]::IsNullOrEmpty($GitEmail)) {
-    Write-Host "[*] Configuring local Git user email..." -ForegroundColor Yellow
-    git config user.email "mayed050@users.noreply.github.com"
+git config user.name "mayed050" | Out-Null
+git config user.email "mayed050@users.noreply.github.com" | Out-Null
+
+Write-Log "Starting GitHub auto-sync."
+
+git fetch $Remote $Branch | Out-Null
+
+$CurrentBranch = (git branch --show-current).Trim()
+if ($CurrentBranch -ne $Branch) {
+    throw "Current branch is '$CurrentBranch', expected '$Branch'."
 }
 
-# Check and set git remote
-$RemoteCheck = git remote get-url origin 2>$null
-if ([string]::IsNullOrEmpty($RemoteCheck)) {
-    Write-Host "[*] Linking local repository to GitHub..." -ForegroundColor Yellow
-    git remote add origin $RepoUrl
+$ChangedFiles = git status --porcelain
+if ($ChangedFiles) {
+    Write-Log "Local changes detected. Creating sync commit."
+    git add -A
+    $CommitMessage = "chore: auto-sync local project files $(Get-Date -Format 'yyyy-MM-dd HH:mm') [skip ci]"
+    git commit -m $CommitMessage | Out-Null
 } else {
-    git remote set-url origin $RepoUrl
+    Write-Log "No local file changes detected."
 }
 
-# Stage all files
-Write-Host "[*] Staging files..." -ForegroundColor Yellow
-git add .
+Write-Log "Rebasing on $Remote/$Branch."
+git pull --rebase $Remote $Branch | Out-Null
 
-# Create Commit
-$CommitMessage = "feat: implement live price ticking and flashing animations"
-Write-Host "[*] Committing changes: '$CommitMessage'..." -ForegroundColor Yellow
-git commit -m $CommitMessage
+$AheadBehind = git rev-list --left-right --count "$Remote/$Branch...HEAD"
+$Ahead = [int](($AheadBehind -split "\s+")[1])
 
-# Force push to main
-Write-Host "[>] Pushing changes to GitHub (it may ask you to authenticate in a separate window)..." -ForegroundColor Green
-git push -f -u origin main
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "[+] SUCCESS: Changes synced successfully! Your updates are live." -ForegroundColor Green
+if ($Ahead -gt 0) {
+    Write-Log "Pushing $Ahead commit(s) to GitHub."
+    git push $Remote $Branch | Out-Null
 } else {
-    Write-Host "[-] ERROR: Failed to push to GitHub. Please check your credentials or access rights." -ForegroundColor Red
+    Write-Log "Nothing to push."
 }
+
+Write-Log "GitHub auto-sync completed."
