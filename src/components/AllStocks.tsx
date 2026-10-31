@@ -20,6 +20,7 @@ import { formatCurrency, formatNumber, formatPercent, percentClass } from "@/lib
 import { calculateFinancialHealthScore, getExpectedTrend, healthClass } from "@/utils/analyticsEngine";
 import type { HealthBand, MarketCode, StockRecord } from "@/types";
 import { StockIcon } from "@/components/StockIcon";
+import { StaleQuoteNote } from "@/components/ui/StaleQuoteNote";
 import { useLanguage } from "@/context/languageContext";
 
 type SortKey = "symbol" | "market" | "price" | "change" | "yield" | "pe" | "roe" | "health" | "tradeValue";
@@ -249,7 +250,10 @@ export function AllStocks() {
                       : directions[stock.symbol] === "down"
                       ? "animate-flash-down"
                       : ""
-                  }`}>{formatCurrency(stock.prices.last)}</td>
+                  }`}>
+                    {formatCurrency(stock.prices.last)}
+                    <StaleQuoteNote stock={stock} />
+                  </td>
                   <td className={`number px-3 py-3 font-black transition-all ${percentClass(stock.prices.changePercent)} ${
                     directions[stock.symbol] === "up"
                       ? "animate-flash-up"
@@ -314,6 +318,7 @@ export function AllStocks() {
                 <Mini label={t("thChange")} value={formatPercent(stock.prices.changePercent)} tone={percentClass(stock.prices.changePercent)} />
                 <Mini label={t("thTrend")} value={`${getTrendIcon(trend.direction)} ${t(trend.direction)}`} />
               </div>
+              <StaleQuoteNote stock={stock} />
             </Link>
           );
         })}

@@ -38,6 +38,12 @@ type OverridesFile = {
 const overridesPath = path.resolve(process.cwd(), "src", "data", "generated", "market-overrides.json");
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const USD_AED = 3.6725; // TradingView reports traded value and market cap in USD for these markets
+const TRADINGVIEW_COLUMNS = ["close", "change_abs", "high", "low", "volume", "Value.Traded", "market_cap_basic", "price_52_week_high", "price_52_week_low"];
+// Listed on TradingView under a different ticker than our symbol
+const TRADINGVIEW_TICKERS: Record<string, string> = { EAND: "ADX:ETISALAT" };
+
 async function runDaemon() {
   const runOnce = process.argv.includes("--once");
 
@@ -81,8 +87,9 @@ async function syncMarketData() {
   }
 
   const apiKey = process.env.TWELVE_DATA_API_KEY;
-  let sourceLabel = "Simulation Daemon (Stateful Feed)";
-  let updatedQuotes: Record<string, QuoteOverride> = {};
+  let sourceLabel = "Last known quotes";
+  // A stock without a fresh quote keeps its last real one, along with that quote's date and source
+  const updatedQuotes: Record<string, QuoteOverride> = { ...existingQuotes };
 
   if (apiKey) {
     // ----------------------------------------------------
@@ -100,29 +107,16 @@ async function syncMarketData() {
       stocksData.forEach((stock) => {
         const symbol = stock.symbol;
         const result = apiData[symbol];
+        if (!result?.price) return;
+
         const prevQuote = existingQuotes[symbol];
         const previousClose = prevQuote?.previousClose ?? stock.prices.previousClose;
-        
-        let lastPrice = prevQuote?.last ?? stock.prices.last;
-        let sourceUsed = "Simulation Fallback";
-
-        if (result && result.price) {
-          lastPrice = Number(Number(result.price).toFixed(4));
-          sourceUsed = "Twelve Data API Live";
-        } else {
-          // Stateful simulation tick if symbol is missing from Twelve Data
-          const changePct = (Math.random() * 0.4 - 0.18) / 100;
-          lastPrice = Number((lastPrice * (1 + changePct)).toFixed(4));
-        }
-
+        const lastPrice = Number(Number(result.price).toFixed(4));
         const change = Number((lastPrice - previousClose).toFixed(4));
         const changePercent = Number(((change / previousClose) * 100).toFixed(4));
-        
-        const additionalVol = Math.floor(Math.random() * 20000) + 1000;
-        const currentVol = (prevQuote?.volume ?? stock.prices.volume) + additionalVol;
-        const currentVal = Number(((prevQuote?.tradeValue ?? stock.prices.tradeValue) + (additionalVol * lastPrice)).toFixed(2));
 
         updatedQuotes[symbol] = {
+          ...prevQuote,
           last: lastPrice,
           previousClose,
           change,
@@ -131,12 +125,9 @@ async function syncMarketData() {
           low: Math.min(prevQuote?.low ?? lastPrice, lastPrice),
           high52: prevQuote?.high52 ?? stock.prices.high52,
           low52: prevQuote?.low52 ?? stock.prices.low52,
-          volume: currentVol,
-          tradeValue: currentVal,
-          trades: (prevQuote?.trades ?? stock.prices.trades) + Math.floor(additionalVol / 120),
           marketCap: Number((stock.prices.marketCap * (lastPrice / stock.prices.last)).toFixed(2)),
           lastUpdated: now.toISOString().slice(0, 10),
-          source: sourceUsed
+          source: "Twelve Data API Live"
         };
       });
 
@@ -145,18 +136,16 @@ async function syncMarketData() {
 
     } catch (e) {
       const err = e instanceof Error ? e.message : String(e);
-      console.log(`${RED}✘ API Sync failed (${err}). Falling back to simulation...${RESET}`);
-      updatedQuotes = generateSimulatedQuotes(existingQuotes, now);
+      console.log(`${RED}✘ API Sync failed (${err}). Keeping last known quotes.${RESET}`);
     }
   } else {
     // ----------------------------------------------------
-    // Option B: Free Yahoo Finance (DFM) + Simulation (ADX) Hybrid
+    // Option B: Free Yahoo Finance (DFM) + TradingView (ADX)
     // ----------------------------------------------------
-    console.log(`${CYAN}No Twelve Data API Key. Initiating free Yahoo Finance Live Sync for DFM stocks...${RESET}`);
+    console.log(`${CYAN}No Twelve Data API Key. Initiating free Yahoo Finance and TradingView sync...${RESET}`);
 
-    // Generate base quotes from simulation, then overwrite DFM stocks with real Yahoo Finance quotes
-    const simulated = generateSimulatedQuotes(existingQuotes, now);
     const dfmStocks = stocksData.filter((s) => s.market === "DFM");
+    const adxStocks = stocksData.filter((s) => s.market === "ADX");
     let yahooMatchedCount = 0;
 
     for (const stock of dfmStocks) {
@@ -165,9 +154,7 @@ async function syncMarketData() {
 
       try {
         const res = await fetch(url, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-          }
+          headers: { "User-Agent": USER_AGENT }
         });
         if (res.status === 200) {
           const data = await res.json() as any;
@@ -180,20 +167,20 @@ async function syncMarketData() {
             const change = Number((livePrice - prevClose).toFixed(4));
             const changePercent = Number(((change / prevClose) * 100).toFixed(4));
             const currentVol = meta.regularMarketVolume ?? (prevQuote?.volume ?? stock.prices.volume);
-            const currentVal = Number(((prevQuote?.tradeValue ?? stock.prices.tradeValue) + (currentVol * livePrice * 0.0001)).toFixed(2));
+            const currentVal = Number((currentVol * livePrice).toFixed(2));
 
-            simulated[stock.symbol] = {
+            updatedQuotes[stock.symbol] = {
               last: livePrice,
               previousClose: prevClose,
               change,
               changePercent,
               high: meta.regularMarketDayHigh ?? Math.max(prevQuote?.high ?? livePrice, livePrice),
               low: meta.regularMarketDayLow ?? Math.min(prevQuote?.low ?? livePrice, livePrice),
-              high52: prevQuote?.high52 ?? stock.prices.high52,
-              low52: prevQuote?.low52 ?? stock.prices.low52,
+              high52: meta.fiftyTwoWeekHigh ?? prevQuote?.high52 ?? stock.prices.high52,
+              low52: meta.fiftyTwoWeekLow ?? prevQuote?.low52 ?? stock.prices.low52,
               volume: currentVol,
               tradeValue: currentVal,
-              trades: (prevQuote?.trades ?? stock.prices.trades) + Math.floor(Math.random() * 20) + 2,
+              trades: prevQuote?.trades ?? stock.prices.trades,
               marketCap: Number((stock.prices.marketCap * (livePrice / stock.prices.last)).toFixed(2)),
               lastUpdated: now.toISOString().slice(0, 10),
               source: "Yahoo Finance Free Chart Live"
@@ -202,13 +189,22 @@ async function syncMarketData() {
           }
         }
       } catch (e) {
-        // Silent fallback to simulation for this symbol
+        // This symbol keeps its last known quote
       }
     }
 
-    updatedQuotes = simulated;
-    sourceLabel = `Yahoo Finance Live (DFM: ${yahooMatchedCount}/20) + Simulation (ADX)`;
-    console.log(`${GREEN}✔ Free live DFM sync completed! Synced ${yahooMatchedCount} DFM stocks from Yahoo Finance.${RESET}`);
+    let tradingViewMatchedCount = 0;
+    try {
+      const adxQuotes = await fetchTradingViewQuotes(adxStocks, existingQuotes, now);
+      Object.assign(updatedQuotes, adxQuotes);
+      tradingViewMatchedCount = Object.keys(adxQuotes).length;
+    } catch (e) {
+      const err = e instanceof Error ? e.message : String(e);
+      console.log(`${RED}✘ TradingView sync failed (${err}). Keeping last known ADX quotes.${RESET}`);
+    }
+
+    sourceLabel = `Yahoo Finance (DFM: ${yahooMatchedCount}/${dfmStocks.length}) + TradingView (ADX: ${tradingViewMatchedCount}/${adxStocks.length})`;
+    console.log(`${GREEN}✔ Free sync completed! Synced ${yahooMatchedCount} DFM stocks from Yahoo Finance and ${tradingViewMatchedCount} ADX stocks from TradingView.${RESET}`);
   }
 
   // Write payload
@@ -228,48 +224,51 @@ async function syncMarketData() {
   }
 }
 
-function generateSimulatedQuotes(existing: Record<string, QuoteOverride>, now: Date): Record<string, QuoteOverride> {
-  const updated: Record<string, QuoteOverride> = {};
-  
-  stocksData.forEach((stock) => {
-    const symbol = stock.symbol;
-    const prev = existing[symbol];
-    
-    const previousClose = prev?.previousClose ?? stock.prices.previousClose;
-    let currentLast = prev?.last ?? stock.prices.last;
+async function fetchTradingViewQuotes(
+  stocks: typeof stocksData,
+  existing: Record<string, QuoteOverride>,
+  now: Date
+): Promise<Record<string, QuoteOverride>> {
+  const stockByTicker = new Map(stocks.map((stock) => [TRADINGVIEW_TICKERS[stock.symbol] ?? `ADX:${stock.symbol}`, stock]));
 
-    // Apply high-fidelity session tracking
-    // Stocks will fluctuate statefully
-    const isUpDay = Math.random() > 0.46; // Slight bullish bias
-    const percentChange = (Math.random() * 0.35 + 0.05) * (isUpDay ? 1 : -1) / 100;
-    const nextPrice = Math.max(Number((currentLast * (1 + percentChange)).toFixed(4)), 0.05);
+  const res = await fetch("https://scanner.tradingview.com/global/scan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "User-Agent": USER_AGENT },
+    body: JSON.stringify({ symbols: { tickers: [...stockByTicker.keys()] }, columns: TRADINGVIEW_COLUMNS })
+  });
+  if (!res.ok) throw new Error(`API error code ${res.status}`);
 
-    const change = Number((nextPrice - previousClose).toFixed(4));
-    const changePercent = Number(((change / previousClose) * 100).toFixed(4));
+  const json = await res.json() as { data?: { s: string; d: (number | null)[] }[] };
+  const quotes: Record<string, QuoteOverride> = {};
 
-    const addedVol = Math.floor(Math.random() * 8000) + 500;
-    const currentVol = (prev?.volume ?? stock.prices.volume) + addedVol;
-    const currentVal = Number(((prev?.tradeValue ?? stock.prices.tradeValue) + (addedVol * nextPrice)).toFixed(2));
+  for (const { s: ticker, d: row } of json.data ?? []) {
+    const stock = stockByTicker.get(ticker);
+    const [close, changeAbs, high, low, volume, tradedUsd, marketCapUsd, high52, low52] = row;
+    if (!stock || typeof close !== "number") continue;
 
-    updated[symbol] = {
-      last: nextPrice,
+    const prevQuote = existing[stock.symbol];
+    const change = Number((changeAbs ?? 0).toFixed(4));
+    const previousClose = Number((close - change).toFixed(4));
+
+    quotes[stock.symbol] = {
+      last: close,
       previousClose,
       change,
-      changePercent,
-      high: Math.max(prev?.high ?? nextPrice, nextPrice),
-      low: Math.min(prev?.low ?? nextPrice, nextPrice),
-      high52: prev?.high52 ?? stock.prices.high52,
-      low52: prev?.low52 ?? stock.prices.low52,
-      volume: currentVol,
-      tradeValue: currentVal,
-      trades: (prev?.trades ?? stock.prices.trades) + Math.floor(addedVol / 95),
-      marketCap: Number((stock.prices.marketCap * (nextPrice / stock.prices.last)).toFixed(2)),
+      changePercent: Number(((change / previousClose) * 100).toFixed(4)),
+      high: high ?? close,
+      low: low ?? close,
+      high52: typeof high52 === "number" ? Number(high52.toFixed(4)) : prevQuote?.high52,
+      low52: typeof low52 === "number" ? Number(low52.toFixed(4)) : prevQuote?.low52,
+      volume: volume ?? prevQuote?.volume,
+      tradeValue: typeof tradedUsd === "number" ? Number((tradedUsd * USD_AED).toFixed(2)) : prevQuote?.tradeValue,
+      trades: prevQuote?.trades,
+      marketCap: typeof marketCapUsd === "number" ? Number((marketCapUsd * USD_AED).toFixed(2)) : prevQuote?.marketCap,
       lastUpdated: now.toISOString().slice(0, 10),
-      source: "Simulation Daemon (5m Stateful Tick)"
+      source: "TradingView Scanner (15-minute delay)"
     };
-  });
+  }
 
-  return updated;
+  return quotes;
 }
 
 function printTerminalReport(quotes: Record<string, QuoteOverride>) {

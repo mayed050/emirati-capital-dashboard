@@ -8,6 +8,7 @@ import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { StockIcon } from "@/components/StockIcon";
+import { StaleQuoteNote } from "@/components/ui/StaleQuoteNote";
 import { formatCurrency, formatCurrencyFull, formatNumber, formatPercent, formatPlainPercent, percentClass } from "@/lib/format";
 import { useLanguage } from "@/context/languageContext";
 import { AlertManager } from "@/components/AlertManager";
@@ -269,6 +270,7 @@ export function Dashboard() {
                     {/* السعر — text-right يجعل الأرقام اللاتينية تتمحور يميناً */}
                     <td className={`number px-4 py-3 text-right font-bold text-[color:var(--foreground)] transition-all ${flashCls}`}>
                       {formatCurrency(stock.prices.last)}
+                      <StaleQuoteNote stock={stock} />
                     </td>
 
                     {/* التغير % */}

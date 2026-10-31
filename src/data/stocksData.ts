@@ -1,6 +1,6 @@
 import { stocksConfig } from "@/config/stocks.config";
 import marketOverrides from "@/data/generated/market-overrides.json";
-import type { AnalystTarget, DividendPoint, HistoricalPoint, StockRecord, StockSymbol, Swot } from "@/types";
+import type { AnalystTarget, DividendPoint, HistoricalPoint, MarketCode, StockRecord, StockSymbol, Swot } from "@/types";
 
 type StockSeed = Pick<StockRecord, "symbol" | "prices" | "fundamentals" | "dividend"> & {
   marketLeader?: StockRecord["marketLeader"];
@@ -590,17 +590,33 @@ export const marketLeaderStocks: StockRecord[] = stocksData
 export const DATASET_INFO = {
   brandAr: "منصة الأسهم الإماراتية",
   brandEn: "UAE Stocks Platform",
-  snapshotDate: "2026-06-01",
+  snapshotDate: dailyOverrides.updatedAt?.slice(0, 10) ?? "2026-06-01",
   dailyOverrideUpdatedAt: dailyOverrides.updatedAt ?? null,
   dailyOverrideSource: dailyOverrides.source ?? null,
-  dfmSessionDate: "2026-06-01",
-  adxSessionDate: "2026-06-01",
-  mode: "أول جلسة بعد عيد الأضحى — 1 يونيو 2026 — بيانات لقطة حية جزئية مدعومة بمحاكاة الأسعار",
+  dfmSessionDate: latestSessionDate("DFM"),
+  adxSessionDate: latestSessionDate("ADX"),
+  mode: "أسعار متأخرة من Yahoo Finance لسوق دبي وTradingView لسوق أبوظبي، وتتحدث عدة مرات يوميا",
   coverageNote:
     "تغطي أفضل 20 سهما في DFM وأفضل 20 سهما في ADX وفق رتبة مركبة بين القيمة السوقية وقيمة التداول اليومية، مع إبقاء TECOM وNMDCENR وADNIC من قائمة المتابعة الأصلية.",
   disclaimer:
     "المعلومات المعروضة لأغراض المتابعة والتعليم فقط، ولا تعد توصية شراء أو بيع أو دعوة لاتخاذ قرار استثماري.",
 };
+
+const STALE_QUOTE_DAYS = 7;
+
+// A quote goes stale when its feed stops publishing it, e.g. a suspended or renamed ticker
+export function isStaleQuote(stock: StockRecord): boolean {
+  const ageMs = Date.parse(DATASET_INFO.snapshotDate) - Date.parse(stock.prices.lastUpdated);
+  return ageMs > STALE_QUOTE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function latestSessionDate(market: MarketCode): string {
+  return stocksData
+    .filter((stock) => stock.market === market)
+    .map((stock) => stock.prices.lastUpdated)
+    .sort()
+    .at(-1) ?? "";
+}
 
 export function getStockBySymbol(symbol: string): StockRecord | undefined {
   return stocksData.find((stock) => stock.symbol === symbol.toUpperCase());

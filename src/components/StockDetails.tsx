@@ -38,6 +38,7 @@ import { formatCurrency, formatCurrencyFull, formatDate, formatNumber, formatPer
 import { StockIcon } from "@/components/StockIcon";
 import { Badge } from "@/components/ui/Badge";
 import { MiniCard } from "@/components/ui/MiniCard";
+import { StaleQuoteNote } from "@/components/ui/StaleQuoteNote";
 import { useLanguage } from "@/context/languageContext";
 import {
   calculateDividendSustainability,
@@ -776,6 +777,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <p className="text-xs font-black text-slate-500">{language === "ar" ? "آخر تحديث للبيانات" : "Last Data Update"}</p>
               <p className="mt-1 font-black text-slate-950">{stock.prices.lastUpdated}</p>
+              <StaleQuoteNote stock={stock} />
             </div>
           </div>
         </div>

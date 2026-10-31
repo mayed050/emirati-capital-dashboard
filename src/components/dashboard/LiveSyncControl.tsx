@@ -2,19 +2,17 @@
 
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useLanguage } from "@/context/languageContext";
-import { RefreshCw, Radio, Timer, Activity, Wifi, WifiOff } from "lucide-react";
+import { RefreshCw, Timer, Activity, Wifi, WifiOff } from "lucide-react";
 import { useState } from "react";
 
 const translations = {
   ar: {
-    title: "مزامنة البث المباشر",
+    title: "مزامنة الأسعار",
     modeLabel: "معدل التحديث:",
-    mode_sim: "بث فائق السرعة (محاكاة)",
-    mode_5m: "كل 5 دقائق (بث حي)",
-    mode_10m: "كل 10 دقائق (بث حي)",
+    mode_5m: "كل 5 دقائق",
+    mode_10m: "كل 10 دقائق",
     mode_manual: "تحديث يدوي فقط",
     mode_disabled: "تعطيل البث بالكامل",
-    status_live: "بث مباشر نشط",
     status_scheduled: "تحديث مجدول",
     status_manual: "تحديث يدوي",
     status_disabled: "مغلق",
@@ -26,14 +24,12 @@ const translations = {
     never: "لم يتم بعد"
   },
   en: {
-    title: "Live Feed Sync",
+    title: "Price Sync",
     modeLabel: "Refresh Rate:",
-    mode_sim: "Super-fast Stream (Sim)",
-    mode_5m: "Every 5 Minutes (Live)",
-    mode_10m: "Every 10 Minutes (Live)",
+    mode_5m: "Every 5 Minutes",
+    mode_10m: "Every 10 Minutes",
     mode_manual: "Manual Refresh Only",
     mode_disabled: "Disable Feed Fully",
-    status_live: "Active Live Stream",
     status_scheduled: "Scheduled Update",
     status_manual: "Manual Sync Only",
     status_disabled: "Feed Offline",
@@ -89,13 +85,6 @@ export function LiveSyncControl() {
   // Determine indicator colors
   const getBadgeStyle = () => {
     switch (syncMode) {
-      case "sim":
-        return {
-          bg: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
-          dot: "bg-emerald-400 animate-pulse",
-          text: t.status_live,
-          icon: Radio
-        };
       case "5m":
       case "10m":
         return {
@@ -145,10 +134,9 @@ export function LiveSyncControl() {
         </label>
         <select
           value={syncMode}
-          onChange={(e) => setSyncMode(e.target.value as any)}
+          onChange={(e) => setSyncMode(e.target.value as typeof syncMode)}
           className="w-full rounded-lg border border-[color:var(--line)] bg-[color:var(--surface)] text-[color:var(--foreground)] px-2.5 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-[color:var(--primary)] focus:border-[color:var(--primary)] transition"
         >
-          <option value="sim">{t.mode_sim}</option>
           <option value="5m">{t.mode_5m}</option>
           <option value="10m">{t.mode_10m}</option>
           <option value="manual">{t.mode_manual}</option>
@@ -173,15 +161,13 @@ export function LiveSyncControl() {
               cy="20"
               r={radius}
               className={`fill-none stroke-current transition-all duration-1000 ${
-                syncMode === "sim"
-                  ? "text-emerald-400 animate-spin origin-center stroke-dashed"
-                  : syncMode === "disabled"
+                syncMode === "disabled"
                   ? "text-rose-500"
                   : "text-sky-400"
               }`}
               strokeWidth="2.5"
               strokeDasharray={circumference}
-              strokeDashoffset={syncMode === "sim" || syncMode === "disabled" || syncMode === "manual" ? 0 : strokeDashoffset}
+              strokeDashoffset={syncMode === "disabled" || syncMode === "manual" ? 0 : strokeDashoffset}
               strokeLinecap="round"
             />
           </svg>
@@ -192,9 +178,7 @@ export function LiveSyncControl() {
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-[color:var(--muted)] leading-4">{t.next_sync_in}</p>
           <p className="text-sm font-black text-[color:var(--foreground)] leading-5 truncate mt-0.5">
-            {syncMode === "sim" ? (
-              <span className="text-emerald-400 animate-pulse">{t.mode_sim.split(" ")[0]}</span>
-            ) : syncMode === "disabled" || syncMode === "manual" ? (
+            {syncMode === "disabled" || syncMode === "manual" ? (
               <span className="text-[color:var(--muted)]">{t.not_available}</span>
             ) : (
               <span className="font-mono text-sky-400 font-bold">{formatTime(secondsToNextSync)}</span>
