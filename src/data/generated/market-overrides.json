@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-31T18:52:44.122Z",
+  "updatedAt": "2026-10-31T22:02:03.442Z",
   "source": "Yahoo Finance (DFM: 20/21) + TradingView (ADX: 21/22)",
   "quotes": {
     "DEWA": {
@@ -44,8 +44,8 @@
       "low": 1.075,
       "high52": 1.34,
       "low52": 0.627,
-      "volume": 14950232,
-      "tradeValue": 16221001.72,
+      "volume": 14762440,
+      "tradeValue": 16017247.4,
       "trades": 1850,
       "marketCap": 25267741078.6,
       "lastUpdated": "2026-10-31",
@@ -380,8 +380,8 @@
       "low": 3.63,
       "high52": 4.35,
       "low52": 3.18,
-      "volume": 412725,
-      "tradeValue": 1502319,
+      "volume": 408636,
+      "tradeValue": 1487435.04,
       "trades": 140,
       "marketCap": 15477351289.3,
       "lastUpdated": "2026-10-31",
