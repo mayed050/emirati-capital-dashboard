@@ -1,12 +1,11 @@
 import { DATASET_INFO, getStockBySymbol, marketLeaderStocks, stocksData } from "@/data/stocksData";
+import marketOverrides from "@/data/generated/market-overrides.json";
 import {
   calculateDividendSustainability,
   calculateFinancialHealthScore,
   getExpectedTrend,
 } from "@/utils/analyticsEngine";
 import type { MarketCode, StockRecord, StockSymbol } from "@/types";
-import fs from "node:fs";
-import path from "node:path";
 
 export type UnifiedStockAnalytics = {
   health: ReturnType<typeof calculateFinancialHealthScore>;
@@ -32,17 +31,8 @@ export type UnifiedMarketDataset = {
 };
 
 export function getUnifiedMarketDataset(): UnifiedMarketDataset {
-  // 1. Read overrides from disk dynamically to bypass Node module cache
-  let overrides: Record<string, any> = {};
-  try {
-    const filePath = path.resolve(process.cwd(), "src", "data", "generated", "market-overrides.json");
-    if (fs.existsSync(filePath)) {
-      const raw = fs.readFileSync(filePath, "utf8");
-      overrides = JSON.parse(raw).quotes || {};
-    }
-  } catch (e) {
-    console.warn("[unified-market-data] Failed to read overrides dynamically:", e);
-  }
+  // 1. Overrides are bundled at build time: this module also runs in the browser, so it can't read from disk
+  const overrides = marketOverrides.quotes as Record<string, Partial<StockRecord["prices"]>>;
 
   // 2. Merge overrides with static stocksData
   const mergedStocks: StockRecord[] = stocksData.map((stock) => {
