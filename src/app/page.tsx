@@ -1,5 +1,6 @@
 import { Dashboard } from "@/components/Dashboard";
+import { getMarketIndexes } from "@/lib/data/market-history";
 
 export default function Home() {
-  return <Dashboard />;
+  return <Dashboard marketIndexes={getMarketIndexes()} />;
 }

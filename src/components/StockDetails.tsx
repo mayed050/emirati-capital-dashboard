@@ -34,9 +34,10 @@ import {
   BarChart3,
   Coins
 } from "lucide-react";
-import { formatCurrency, formatCurrencyFull, formatDate, formatNumber, formatPercent, percentClass } from "@/lib/format";
+import { formatCurrency, formatCurrencyFull, formatDate, formatNumber, formatPercent, formatShortDate, percentClass } from "@/lib/format";
 import { StockIcon } from "@/components/StockIcon";
 import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { MiniCard } from "@/components/ui/MiniCard";
 import { StaleQuoteNote } from "@/components/ui/StaleQuoteNote";
 import { useLanguage } from "@/context/languageContext";
@@ -48,8 +49,9 @@ import {
   calculateSMA,
   calculateEMA,
   calculateRSI,
+  monthsBefore,
 } from "@/utils/analyticsEngine";
-import type { StockRecord } from "@/types";
+import type { StockHistory, StockRecord } from "@/types";
 
 type Period = "3M" | "6M" | "12M";
 type SubTab = "overview" | "analysis" | "financials" | "dividends";
@@ -62,7 +64,9 @@ const tooltipStyle = {
   boxShadow: "0 18px 50px rgba(2, 6, 23, 0.22)",
 };
 
-export function StockDetails({ stock }: { stock: StockRecord }) {
+const MIN_DIVIDEND_YEARS = 2;
+
+export function StockDetails({ stock, history }: { stock: StockRecord; history: StockHistory }) {
   const { t, language } = useLanguage();
   const [period, setPeriod] = useState<Period>("12M");
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("overview");
@@ -77,178 +81,198 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
   const trend = getExpectedTrend(stock);
   const dividend = calculateDividendSustainability(stock);
   
-  const history = useMemo(() => {
-    const size = period === "3M" ? 3 : period === "6M" ? 6 : 12;
-    return stock.historicalPrices.slice(-size);
-  }, [period, stock.historicalPrices]);
+  const lastSession = history.prices.at(-1)?.date;
 
-  const historyPrices = useMemo(() => history.map((h) => h.price), [history]);
-  const smas = useMemo(() => calculateSMA(historyPrices), [historyPrices]);
-  const emas = useMemo(() => calculateEMA(historyPrices), [historyPrices]);
-  const rsis = useMemo(() => calculateRSI(historyPrices), [historyPrices]);
+  // Indicators run over the full series so the visible window starts with values already warmed up
+  const pricesWithIndicators = useMemo(() => {
+    const closes = history.prices.map((point) => point.price);
+    const smas = calculateSMA(closes);
+    const emas = calculateEMA(closes);
+    const rsis = calculateRSI(closes);
 
-  const historyWithIndicators = useMemo(() => {
-    return history.map((point, index) => ({
+    return history.prices.map((point, index) => ({
       ...point,
       sma: smas[index],
       ema: emas[index],
       rsi: rsis[index],
     }));
-  }, [history, smas, emas, rsis]);
+  }, [history.prices]);
+
+  const historyWithIndicators = useMemo(() => {
+    if (!lastSession) return [];
+    const windowStart = monthsBefore(lastSession, period === "3M" ? 3 : period === "6M" ? 6 : 12);
+    return pricesWithIndicators.filter((point) => point.date >= windowStart);
+  }, [period, pricesWithIndicators, lastSession]);
 
   // Tab contents rendering helper functions
+  const renderPriceChart = () => (
+    <>
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">
+            {language === "ar" ? "شارت حركة السعر وحجم التداول" : "Price & Volume Movement Chart"}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {language === "ar"
+              ? `إغلاقات يومية فعلية وحجم كل جلسة، معدّلة للتجزئة والأسهم المجانية. المصدر: ${history.source} · آخر جلسة: ${lastSession}`
+              : `Actual daily closes and session volume, adjusted for splits and bonus shares. Source: ${history.source} · Last session: ${lastSession}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Indicators Toggles */}
+          <button
+            onClick={() => setShowSMA(!showSMA)}
+            className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
+              showSMA ? "bg-amber-500 text-white border-amber-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-amber-500/10"
+            }`}
+          >
+            SMA 14 📈
+          </button>
+          <button
+            onClick={() => setShowEMA(!showEMA)}
+            className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
+              showEMA ? "bg-violet-500 text-white border-violet-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-violet-500/10"
+            }`}
+          >
+            EMA 14 📉
+          </button>
+          <button
+            onClick={() => setShowRSI(!showRSI)}
+            className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
+              showRSI ? "bg-rose-500 text-white border-rose-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-rose-500/10"
+            }`}
+          >
+            RSI 14 📊
+          </button>
+          <div className="h-6 w-[1px] bg-white/10 mx-1 hidden sm:block"></div>
+          {(["3M", "6M", "12M"] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setPeriod(item)}
+              className={`min-h-8 rounded-lg px-3 text-[10px] font-black transition-all ${
+                period === item ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20" : "border border-white/10 bg-white/5 text-slate-700 hover:bg-sky-500/10"
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full flex-1 flex flex-col justify-between">
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={showRSI ? 240 : 340}>
+            <ComposedChart data={historyWithIndicators} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`priceFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
+              <XAxis dataKey="date" tickFormatter={(value) => formatShortDate(value, language)} minTickGap={40} tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              
+              {/* Primary Y Axis for Price */}
+              <YAxis yAxisId="price" width={35} tick={{ fontSize: 10, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
+              
+              {/* Secondary Y Axis for Volume (domain scaled to keep bars at the bottom) */}
+              <YAxis yAxisId="volume" hide domain={[0, (dataMax: number) => dataMax * 4]} />
+              
+              <Tooltip 
+                contentStyle={tooltipStyle} 
+                labelFormatter={(value) => formatDate(String(value))}
+                formatter={(value, name) => {
+                  if (name === "السعر" || name === "Price") return [formatCurrency(Number(value)), language === "ar" ? "السعر" : "Price"];
+                  if (name === "الحجم" || name === "Volume") return [formatNumber(Number(value)), language === "ar" ? "الحجم" : "Volume"];
+                  return [value, name];
+                }} 
+              />
+              
+              {/* Price Area */}
+              <Area 
+                yAxisId="price" 
+                isAnimationActive={false} 
+                type="monotone" 
+                dataKey="price" 
+                name={language === "ar" ? "السعر" : "Price"} 
+                stroke="#0ea5e9" 
+                strokeWidth={2} 
+                fill={`url(#priceFill-${stock.symbol})`} 
+              />
+              
+              {/* Volume Bars sitting elegantly in the bottom 25% of the chart */}
+              <Bar 
+                yAxisId="volume" 
+                isAnimationActive={false} 
+                dataKey="volume" 
+                name={language === "ar" ? "الحجم" : "Volume"} 
+                fill="#10b981" 
+                opacity={0.35} 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={30}
+              />
+
+              {/* Technical Indicators lines */}
+              {showSMA && (
+                <Line 
+                  yAxisId="price" 
+                  type="monotone" 
+                  dataKey="sma" 
+                  stroke="#f59e0b" 
+                  strokeWidth={2} 
+                  dot={false} 
+                  name={language === "ar" ? "متوسط بسيط SMA" : "SMA 14"} 
+                  connectNulls 
+                />
+              )}
+              {showEMA && (
+                <Line 
+                  yAxisId="price" 
+                  type="monotone" 
+                  dataKey="ema" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={2} 
+                  dot={false} 
+                  name={language === "ar" ? "متوسط أسي EMA" : "EMA 14"} 
+                  connectNulls 
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        {showRSI && (
+          <div className="w-full mt-3 border-t border-white/10 pt-3">
+            <p className="text-[10px] font-black text-slate-500 mb-1">{language === "ar" ? "مؤشر القوة النسبية RSI (14)" : "RSI (14) Momentum Indicator"}</p>
+            <ResponsiveContainer width="100%" height={90}>
+              <LineChart data={historyWithIndicators} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.08)" />
+                <XAxis dataKey="date" hide />
+                <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} domain={[0, 100]} ticks={[30, 50, 70]} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value, "RSI"]} />
+                <Line type="monotone" dataKey="rsi" stroke="#ef4444" strokeWidth={1.5} dot={false} name="RSI" connectNulls />
+                <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" label={{ value: "30", fill: "#10b981", fontSize: 8, position: "insideBottomLeft" }} />
+                <ReferenceLine y={70} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: "70", fill: "#f43f5e", fontSize: 8, position: "insideTopLeft" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   const renderOverview = () => (
     <div className="view-fade grid gap-5 xl:grid-cols-[1.8fr_1.2fr] xl:items-stretch">
       {/* Right Column (2/3): Unified Interactive Price-Volume Chart with Indicators */}
       <section className="fusion-panel rounded-lg p-5 flex flex-col justify-between min-w-0">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-xl font-black text-slate-950">
-              {language === "ar" ? "شارت حركة السعر وحجم التداول" : "Price & Volume Movement Chart"}
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              {language === "ar" ? "منحنى السعر التفصيلي مدمجاً مع حجم تداولات الجلسات اليومية في القاعدة." : "Detailed price curve overlaid with session volume sitting in the base."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            {/* Indicators Toggles */}
-            <button
-              onClick={() => setShowSMA(!showSMA)}
-              className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
-                showSMA ? "bg-amber-500 text-white border-amber-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-amber-500/10"
-              }`}
-            >
-              SMA 14 📈
-            </button>
-            <button
-              onClick={() => setShowEMA(!showEMA)}
-              className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
-                showEMA ? "bg-violet-500 text-white border-violet-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-violet-500/10"
-              }`}
-            >
-              EMA 14 📉
-            </button>
-            <button
-              onClick={() => setShowRSI(!showRSI)}
-              className={`min-h-8 rounded-lg px-2.5 text-[10px] font-black transition-all border ${
-                showRSI ? "bg-rose-500 text-white border-rose-600 shadow-md" : "border-white/10 bg-white/5 text-slate-500 hover:bg-rose-500/10"
-              }`}
-            >
-              RSI 14 📊
-            </button>
-            <div className="h-6 w-[1px] bg-white/10 mx-1 hidden sm:block"></div>
-            {(["3M", "6M", "12M"] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setPeriod(item)}
-                className={`min-h-8 rounded-lg px-3 text-[10px] font-black transition-all ${
-                  period === item ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20" : "border border-white/10 bg-white/5 text-slate-700 hover:bg-sky-500/10"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="w-full flex-1 flex flex-col justify-between">
-          <div className="flex-1">
-            <ResponsiveContainer width="100%" height={showRSI ? 240 : 340}>
-              <ComposedChart data={historyWithIndicators} margin={{ top: 15, right: 5, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id={`priceFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                
-                {/* Primary Y Axis for Price */}
-                <YAxis yAxisId="price" width={35} tick={{ fontSize: 10, fill: "var(--muted)" }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
-                
-                {/* Secondary Y Axis for Volume (domain scaled to keep bars at the bottom) */}
-                <YAxis yAxisId="volume" hide domain={[0, (dataMax: number) => dataMax * 4]} />
-                
-                <Tooltip 
-                  contentStyle={tooltipStyle} 
-                  formatter={(value, name) => {
-                    if (name === "السعر" || name === "Price") return [formatCurrency(Number(value)), language === "ar" ? "السعر" : "Price"];
-                    if (name === "الحجم" || name === "Volume") return [formatNumber(Number(value)), language === "ar" ? "الحجم" : "Volume"];
-                    return [value, name];
-                  }} 
-                />
-                
-                {/* Price Area */}
-                <Area 
-                  yAxisId="price" 
-                  isAnimationActive={false} 
-                  type="monotone" 
-                  dataKey="price" 
-                  name={language === "ar" ? "السعر" : "Price"} 
-                  stroke="#0ea5e9" 
-                  strokeWidth={3} 
-                  fill={`url(#priceFill-${stock.symbol})`} 
-                />
-                
-                {/* Volume Bars sitting elegantly in the bottom 25% of the chart */}
-                <Bar 
-                  yAxisId="volume" 
-                  isAnimationActive={false} 
-                  dataKey="volume" 
-                  name={language === "ar" ? "الحجم" : "Volume"} 
-                  fill="#10b981" 
-                  opacity={0.35} 
-                  radius={[4, 4, 0, 0]} 
-                  maxBarSize={30}
-                />
-
-                {/* Technical Indicators lines */}
-                {showSMA && (
-                  <Line 
-                    yAxisId="price" 
-                    type="monotone" 
-                    dataKey="sma" 
-                    stroke="#f59e0b" 
-                    strokeWidth={2} 
-                    dot={false} 
-                    name={language === "ar" ? "متوسط بسيط SMA" : "SMA 14"} 
-                    connectNulls 
-                  />
-                )}
-                {showEMA && (
-                  <Line 
-                    yAxisId="price" 
-                    type="monotone" 
-                    dataKey="ema" 
-                    stroke="#8b5cf6" 
-                    strokeWidth={2} 
-                    dot={false} 
-                    name={language === "ar" ? "متوسط أسي EMA" : "EMA 14"} 
-                    connectNulls 
-                  />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          {showRSI && (
-            <div className="w-full mt-3 border-t border-white/10 pt-3">
-              <p className="text-[10px] font-black text-slate-500 mb-1">{language === "ar" ? "مؤشر القوة النسبية RSI (14)" : "RSI (14) Momentum Indicator"}</p>
-              <ResponsiveContainer width="100%" height={90}>
-                <LineChart data={historyWithIndicators} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.08)" />
-                  <XAxis dataKey="label" hide />
-                  <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} domain={[0, 100]} ticks={[30, 50, 70]} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value, "RSI"]} />
-                  <Line type="monotone" dataKey="rsi" stroke="#ef4444" strokeWidth={1.5} dot={false} name="RSI" connectNulls />
-                  <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" label={{ value: "30", fill: "#10b981", fontSize: 8, position: "insideBottomLeft" }} />
-                  <ReferenceLine y={70} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: "70", fill: "#f43f5e", fontSize: 8, position: "insideTopLeft" }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {history.prices.length > 0 ? (
+          renderPriceChart()
+        ) : (
+          <EmptyState
+            title={language === "ar" ? "لا يتوفر تاريخ سعري موثّق لهذا السهم" : "No verified price history for this stock"}
+            message={language === "ar" ? "لا يوجد مصدر يغطي إغلاقات هذا السهم، ولا نعرض سلسلة مقدّرة بدلا منها." : "No source covers this stock's closes, and we show no estimated series in their place."}
+          />
+        )}
       </section>
 
       {/* Left Column (1/3): Packed 2x2 Grid of Key Metrics */}
@@ -617,7 +641,7 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
   };
 
   const renderDividends = () => {
-    const hasHistory = stock.historicalDividends && stock.historicalDividends.length >= 2;
+    const hasHistory = history.dividends.filter((point) => point.amount > 0).length >= MIN_DIVIDEND_YEARS;
 
     return (
       <div className="view-fade grid gap-5">
@@ -658,15 +682,15 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               {language === "ar"
-                ? "يظهر مسار نمو وتوزيع الأرباح السنوية عبر السنوات المالية السابقة للشركة."
-                : "Visual track of annual dividend distributions across prior fiscal years."}
+                ? `التوزيع النقدي للسهم عن كل سنة مالية، معدّلا للتجزئة والأسهم المجانية. المصدر: ${history.source}`
+                : `Cash dividend per share for each fiscal year, adjusted for splits and bonus shares. Source: ${history.source}`}
             </p>
           </div>
           
           <div className="w-full">
             {hasHistory ? (
               <ResponsiveContainer width="100%" height={320}>
-                <AreaChart data={stock.historicalDividends} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <AreaChart data={history.dividends} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <defs>
                     <linearGradient id={`divFill-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
@@ -690,39 +714,10 @@ export function StockDetails({ stock }: { stock: StockRecord }) {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              /* High-fidelity Bilingual Payout Timeline Fallback */
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="text-sm font-black text-slate-800">
-                      {language === "ar" ? "📅 تفاصيل وجدول التوزيع الحالي" : "📅 Current Dividend Payout Timeline"}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {language === "ar"
-                        ? "سلسلة التوزيع التاريخي الممتدة تحت التحديث. إليك التواريخ المستهدفة لآخر كوبون معتمد."
-                        : "Historical extended series under update. Listed below are current distribution targets."}
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2.5 py-1">
-                    {language === "ar" ? "توزيع نشط معتمد" : "Active Confirmed Coupon"}
-                  </span>
-                </div>
-                
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mt-5">
-                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
-                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "آخر كوبون مدفوع" : "Last Amount Paid"}</p>
-                    <p className="number text-lg font-black text-slate-900 mt-1">{formatCurrency(stock.dividend.lastAmount)}</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
-                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "تاريخ الاستحقاق" : "Entitlement Date"}</p>
-                    <p className="number text-sm font-black text-slate-900 mt-1">{formatDate(stock.dividend.entitlementDate)}</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-white p-3.5">
-                    <p className="text-[10px] font-black text-slate-400">{language === "ar" ? "تاريخ التوزيع الفعلي" : "Payment Date"}</p>
-                    <p className="number text-sm font-black text-slate-900 mt-1">{formatDate(stock.dividend.paymentDate)}</p>
-                  </div>
-                </div>
-              </div>
+              <EmptyState
+                title={language === "ar" ? "لا يتوفر سجل توزيعات موثّق" : "No verified dividend record"}
+                message={language === "ar" ? "لا يوجد لهذا السهم سجل يغطي سنتين ماليتين من التوزيعات النقدية، ولا نعرض سلسلة مقدّرة بدلا منه." : "This stock has no record covering two fiscal years of cash dividends, and we show no estimated series in its place."}
+              />
             )}
           </div>
         </section>

@@ -256,13 +256,13 @@ export function buildSmartAlerts(stocks: StockRecord[], referenceDate = new Date
       });
     }
 
-    const averageVolume = stock.historicalPrices.reduce((sum, point) => sum + point.volume, 0) / stock.historicalPrices.length;
-    if (stock.prices.volume > averageVolume * 1.55) {
+    const averageVolume = stock.averageVolume30d;
+    if (averageVolume && stock.prices.volume > averageVolume * 1.55) {
       alerts.push({
         id: `volume-${stock.symbol}`,
         symbol: stock.symbol,
         title: "نشاط تداول أعلى من المعتاد",
-        message: `حجم ${stock.symbol} أعلى من متوسط السلسلة الداخلية بنحو ${((stock.prices.volume / averageVolume - 1) * 100).toFixed(0)}%.`,
+        message: `حجم ${stock.symbol} أعلى من متوسط آخر 30 جلسة بنحو ${((stock.prices.volume / averageVolume - 1) * 100).toFixed(0)}%.`,
         severity: "info",
         type: "volume",
       });
@@ -304,6 +304,12 @@ export function healthClass(score: number): string {
   if (score >= 68) return "text-sky-700 bg-sky-50 border-sky-200";
   if (score >= 54) return "text-amber-700 bg-amber-50 border-amber-200";
   return "text-rose-700 bg-rose-50 border-rose-200";
+}
+
+export function monthsBefore(date: string, months: number): string {
+  const result = new Date(`${date}T00:00:00Z`);
+  result.setUTCMonth(result.getUTCMonth() - months);
+  return result.toISOString().slice(0, 10);
 }
 
 function daysBetween(from: string, to: string): number {

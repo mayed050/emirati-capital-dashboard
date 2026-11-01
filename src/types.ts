@@ -10,7 +10,6 @@ export type TrendDirection = "صاعد" | "مستقر إيجابي" | "محاي�
 
 export type HistoricalPoint = {
   date: string;
-  label: string;
   price: number;
   volume: number;
 };
@@ -18,10 +17,40 @@ export type HistoricalPoint = {
 export type DividendPoint = {
   fiscalYear: number;
   amount: number;
-  yield: number;
-  exDate: string;
-  paymentDate: string;
-  source: "رسمي" | "نموذج داخلي";
+};
+
+export type StockHistory = {
+  prices: HistoricalPoint[];
+  dividends: DividendPoint[];
+  source: string;
+};
+
+export type MarketIndexPoint = {
+  date: string;
+  index: number;
+};
+
+export type MarketIndexSeries = {
+  points: MarketIndexPoint[];
+  constituents: number;
+  total: number;
+  source: string;
+};
+
+export type StockHistoryEntry = {
+  prices: [date: string, close: number, volume: number][];
+  dividends: [fiscalYear: number, amount: number][];
+};
+
+export type MarketHistoryFile = {
+  version: number;
+  source: string;
+  stocks: Record<StockSymbol, StockHistoryEntry>;
+};
+
+export type AverageVolumesFile = {
+  sessions: number;
+  volumes: Record<StockSymbol, number>;
 };
 
 export type Swot = {
@@ -95,8 +124,7 @@ export type StockRecord = {
     paymentDate: string;
     payoutRatio: number;
   };
-  historicalPrices: HistoricalPoint[];
-  historicalDividends: DividendPoint[];
+  averageVolume30d?: number;
   swot: Swot;
   modelTarget: AnalystTarget;
   sourceLabels: string[];

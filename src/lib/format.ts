@@ -53,6 +53,14 @@ export function formatDate(value: string | null | undefined): string {
   }).format(parsed);
 }
 
+export function formatShortDate(value: string, language: "ar" | "en" = "ar"): string {
+  return new Intl.DateTimeFormat(language === "ar" ? "ar-AE" : "en-GB", {
+    timeZone: "Asia/Dubai",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(value));
+}
+
 export function formatDateTime(value: string | Date | null | undefined): string {
   if (!value) return unavailableText;
   const parsed = value instanceof Date ? value : new Date(value);

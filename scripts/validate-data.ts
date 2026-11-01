@@ -1,15 +1,15 @@
+import marketHistory from "../src/data/generated/market-history.json";
 import { DATASET_INFO, marketLeaderStocks, stocksData } from "../src/data/stocksData";
 import {
   calculateDividendSustainability,
   calculateFinancialHealthScore,
   getExpectedTrend,
 } from "../src/utils/analyticsEngine";
-import type { StockRecord } from "../src/types";
+import type { MarketHistoryFile, StockHistoryEntry, StockRecord } from "../src/types";
 
 const REQUIRED_LEADERS_PER_MARKET = 20;
-const MIN_HISTORY_POINTS = 12;
-const MIN_DIVIDEND_POINTS = 4;
 const MIN_SWOT_ITEMS = 3;
+const MAX_CLOSE_TO_QUOTE_GAP = 0.15;
 
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -30,6 +30,8 @@ function main() {
     seenSymbols.add(stock.symbol);
     validateStock(stock);
   }
+
+  validateHistory();
 
   if (warnings.length) {
     console.warn(`Data validation warnings (${warnings.length}):`);
@@ -94,21 +96,6 @@ function validateStock(stock: StockRecord) {
   check(isIsoDate(stock.dividend.exDate), `${prefix}: exDate is not YYYY-MM-DD.`);
   check(isIsoDate(stock.dividend.paymentDate), `${prefix}: paymentDate is not YYYY-MM-DD.`);
 
-  check(stock.historicalPrices.length >= MIN_HISTORY_POINTS, `${prefix}: expected at least ${MIN_HISTORY_POINTS} historical price points.`);
-  for (const point of stock.historicalPrices) {
-    check(isIsoDate(point.date), `${prefix}: invalid historical price date ${point.date}.`);
-    checkFinite(point.price, `${prefix}: invalid historical price.`);
-    checkFinite(point.volume, `${prefix}: invalid historical volume.`);
-  }
-
-  check(stock.historicalDividends.length >= MIN_DIVIDEND_POINTS, `${prefix}: expected at least ${MIN_DIVIDEND_POINTS} dividend history points.`);
-  for (const point of stock.historicalDividends) {
-    checkFinite(point.amount, `${prefix}: invalid historical dividend amount.`);
-    checkFinite(point.yield, `${prefix}: invalid historical dividend yield.`);
-    check(isIsoDate(point.exDate), `${prefix}: invalid historical exDate ${point.exDate}.`);
-    check(isIsoDate(point.paymentDate), `${prefix}: invalid historical paymentDate ${point.paymentDate}.`);
-  }
-
   checkSwot(prefix, "strengths", stock.swot.strengths);
   checkSwot(prefix, "weaknesses", stock.swot.weaknesses);
   checkSwot(prefix, "opportunities", stock.swot.opportunities);
@@ -130,6 +117,46 @@ function validateStock(stock: StockRecord) {
   check(Boolean(health.band), `${prefix}: health band is missing.`);
   check(Boolean(getExpectedTrend(stock).direction), `${prefix}: trend direction is missing.`);
   check(Boolean(calculateDividendSustainability(stock).rating), `${prefix}: dividend sustainability rating is missing.`);
+}
+
+// A gap in coverage only warns: the stock page says so, and it must not block the quote sync
+function validateHistory() {
+  const { stocks } = marketHistory as unknown as MarketHistoryFile;
+
+  for (const symbol of Object.keys(stocks)) {
+    check(stocksData.some((stock) => stock.symbol === symbol), `${symbol}: history for an unknown symbol.`);
+  }
+
+  for (const stock of stocksData) {
+    const entry = stocks[stock.symbol];
+    if (!entry?.prices.length) {
+      warnings.push(`${stock.symbol}: no price history.`);
+      continue;
+    }
+    validateHistoryEntry(stock, entry);
+  }
+}
+
+function validateHistoryEntry(stock: StockRecord, entry: StockHistoryEntry) {
+  const prefix = stock.symbol;
+
+  entry.prices.forEach(([date, close, volume], index) => {
+    check(isIsoDate(date), `${prefix}: invalid history date ${date}.`);
+    check(index === 0 || entry.prices[index - 1][0] < date, `${prefix}: history dates out of order at ${date}.`);
+    checkFinite(close, `${prefix}: invalid close on ${date}.`);
+    check(close > 0, `${prefix}: non-positive close on ${date}.`);
+    checkFinite(volume, `${prefix}: invalid volume on ${date}.`);
+  });
+
+  for (const [fiscalYear, amount] of entry.dividends) {
+    check(Number.isInteger(fiscalYear), `${prefix}: invalid dividend year ${fiscalYear}.`);
+    checkFinite(amount, `${prefix}: invalid dividend amount for ${fiscalYear}.`);
+  }
+
+  const lastClose = entry.prices[entry.prices.length - 1][1];
+  if (Math.abs(lastClose / stock.prices.last - 1) > MAX_CLOSE_TO_QUOTE_GAP) {
+    warnings.push(`${prefix}: last close ${lastClose} is far from the quote ${stock.prices.last}.`);
+  }
 }
 
 function validateNumbers(prefix: string, group: string, record: Record<string, unknown>, keys: string[]) {

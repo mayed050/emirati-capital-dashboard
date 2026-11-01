@@ -1,6 +1,7 @@
 import { stocksConfig } from "@/config/stocks.config";
+import averageVolumes from "@/data/generated/average-volumes.json";
 import marketOverrides from "@/data/generated/market-overrides.json";
-import type { AnalystTarget, DividendPoint, HistoricalPoint, MarketCode, StockRecord, StockSymbol, Swot } from "@/types";
+import type { AnalystTarget, AverageVolumesFile, MarketCode, StockRecord, StockSymbol, Swot } from "@/types";
 
 type StockSeed = Pick<StockRecord, "symbol" | "prices" | "fundamentals" | "dividend"> & {
   marketLeader?: StockRecord["marketLeader"];
@@ -37,9 +38,10 @@ type MarketOverridesFile = {
 
 const dailyOverrides = marketOverrides as MarketOverridesFile;
 const dailyPriceOverrides = dailyOverrides.quotes ?? {};
+const averageVolumesBySymbol = (averageVolumes as AverageVolumesFile).volumes;
 
 const modelSource =
-  "نطاقات القيمة والسلاسل التاريخية الممتدة مشتقة داخليا من لقطة 2026-05-29، وليست تغطية محللين أو أسعارا حية.";
+  "نطاقات القيمة مشتقة داخليا من لقطة 2026-05-29، وليست تغطية محللين أو أسعارا حية.";
 
 const dfmLeaderSource = "DFM Daily Bulletin — June 1, 2026 (أول جلسة بعد عيد الأضحى)";
 const adxLeaderSource = "ADX Market Data — June 1, 2026 (أول جلسة بعد عيد الأضحى)";
@@ -778,18 +780,17 @@ function createStock(seed: StockSeed): StockRecord {
     dividend: normalizedDividend,
   };
 
-  const base: Omit<StockRecord, "historicalPrices" | "historicalDividends" | "swot" | "modelTarget" | "sourceLabels"> = {
+  const base: Omit<StockRecord, "swot" | "modelTarget" | "sourceLabels"> = {
     ...config,
     prices: normalizedSeed.prices,
     fundamentals: normalizedSeed.fundamentals,
     dividend: normalizedSeed.dividend,
     marketLeader: normalizedSeed.marketLeader,
+    averageVolume30d: averageVolumesBySymbol[normalizedSeed.symbol],
   };
 
-  const withHistory = {
+  const withSources = {
     ...base,
-    historicalPrices: buildPriceHistory(normalizedSeed),
-    historicalDividends: buildDividendHistory(normalizedSeed),
     sourceLabels: [
       `${config.market} snapshot ${normalizedSeed.prices.lastUpdated}`,
       "Fundamentals snapshot from local 2026-05-29 dataset",
@@ -798,11 +799,11 @@ function createStock(seed: StockSeed): StockRecord {
     ],
   };
 
-  const modelTarget = buildModelTarget(withHistory);
-  const swot = buildSwot(withHistory);
+  const modelTarget = buildModelTarget(withSources);
+  const swot = buildSwot(withSources);
 
   return {
-    ...withHistory,
+    ...withSources,
     swot,
     modelTarget,
   };
@@ -856,52 +857,6 @@ function deriveDividendYield(seed: StockSeed): number {
 
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function buildPriceHistory(seed: StockSeed): HistoricalPoint[] {
-  const labels = ["يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو"];
-  const baseDate = new Date(Date.UTC(2025, 5, 1));
-  const codeSeed = seed.symbol.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const trend = clamp((seed.fundamentals.revenueGrowth + seed.fundamentals.netProfitGrowth + seed.prices.changePercent) / 300, -0.12, 0.16);
-  const range = Math.max(seed.prices.high52 - seed.prices.low52, seed.prices.last * 0.08);
-
-  return labels.map((label, index) => {
-    const wave = Math.sin((index + codeSeed % 7) * 0.9) * range * 0.12;
-    const drift = (index - (labels.length - 1)) * seed.prices.last * trend * 0.08;
-    const rawPrice = index === labels.length - 1 ? seed.prices.last : seed.prices.last + wave + drift;
-    const priceValue = clamp(rawPrice, seed.prices.low52, seed.prices.high52);
-    const volumeWave = 0.78 + ((codeSeed + index * 17) % 41) / 100;
-    const date = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + index, 1)).toISOString().slice(0, 10);
-
-    return {
-      date,
-      label,
-      price: round(priceValue, 3),
-      volume: Math.max(1, Math.round(seed.prices.volume * volumeWave)),
-    };
-  });
-}
-
-function buildDividendHistory(seed: StockSeed): DividendPoint[] {
-  const exDate = new Date(`${seed.dividend.exDate}T00:00:00Z`);
-  const paymentDate = new Date(`${seed.dividend.paymentDate}T00:00:00Z`);
-  const growthBias = clamp(seed.fundamentals.netProfitGrowth / 100, -0.12, 0.18);
-
-  return [2023, 2024, 2025, 2026].map((year, index) => {
-    const scale = 0.86 + index * 0.045 + growthBias * 0.25;
-    const amount = index === 3 ? seed.dividend.annualDividend : round(seed.dividend.annualDividend * scale, 4);
-    const ex = new Date(Date.UTC(year, exDate.getUTCMonth(), exDate.getUTCDate())).toISOString().slice(0, 10);
-    const payment = new Date(Date.UTC(year, paymentDate.getUTCMonth(), paymentDate.getUTCDate())).toISOString().slice(0, 10);
-
-    return {
-      fiscalYear: year,
-      amount,
-      yield: round((amount / seed.prices.last) * 100, 2),
-      exDate: ex,
-      paymentDate: payment,
-      source: year === 2026 ? "رسمي" : "نموذج داخلي",
-    };
-  });
 }
 
 function buildModelTarget(stock: Omit<StockRecord, "modelTarget" | "swot">): AnalystTarget {

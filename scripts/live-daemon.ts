@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { stocksData } from "../src/data/stocksData";
+import { USER_AGENT, tradingViewTicker } from "./tradingview";
 
 // ANSI escape codes for beautiful console formatting
 const RESET = "\x1b[0m";
@@ -38,11 +39,8 @@ type OverridesFile = {
 const overridesPath = path.resolve(process.cwd(), "src", "data", "generated", "market-overrides.json");
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 const USD_AED = 3.6725; // TradingView reports traded value and market cap in USD for these markets
 const TRADINGVIEW_COLUMNS = ["close", "change_abs", "high", "low", "volume", "Value.Traded", "market_cap_basic", "price_52_week_high", "price_52_week_low"];
-// Listed on TradingView under a different ticker than our symbol
-const TRADINGVIEW_TICKERS: Record<string, string> = { EAND: "ADX:ETISALAT" };
 
 async function runDaemon() {
   const runOnce = process.argv.includes("--once");
@@ -229,7 +227,7 @@ async function fetchTradingViewQuotes(
   existing: Record<string, QuoteOverride>,
   now: Date
 ): Promise<Record<string, QuoteOverride>> {
-  const stockByTicker = new Map(stocks.map((stock) => [TRADINGVIEW_TICKERS[stock.symbol] ?? `ADX:${stock.symbol}`, stock]));
+  const stockByTicker = new Map(stocks.map((stock) => [tradingViewTicker(stock.symbol, stock.market), stock]));
 
   const res = await fetch("https://scanner.tradingview.com/global/scan", {
     method: "POST",

@@ -8,6 +8,7 @@ import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { StockIcon } from "@/components/StockIcon";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { StaleQuoteNote } from "@/components/ui/StaleQuoteNote";
 import { formatCurrency, formatCurrencyFull, formatNumber, formatPercent, formatPlainPercent, percentClass } from "@/lib/format";
 import { useLanguage } from "@/context/languageContext";
@@ -17,7 +18,7 @@ import {
   calculateFinancialHealthScore,
   getExpectedTrend,
 } from "@/utils/analyticsEngine";
-import type { MarketCode, StockRecord } from "@/types";
+import type { MarketCode, MarketIndexSeries, StockRecord } from "@/types";
 
 type MovementMode = "gainers" | "losers" | "value" | "volume";
 
@@ -62,7 +63,7 @@ const globalIndices = [
   { name: "Nikkei 225", value: 37891.2, points: 127.4, change: 0.34 },
 ];
 
-export function Dashboard() {
+export function Dashboard({ marketIndexes }: { marketIndexes: Record<MarketCode, MarketIndexSeries> }) {
   const { t, language } = useLanguage();
   const [selectedMarket, setSelectedMarket] = useState<MarketCode>("DFM");
   const [movementMode, setMovementMode] = useState<MovementMode>("gainers");
@@ -73,7 +74,8 @@ export function Dashboard() {
     () => overviewStocks.filter((stock) => stock.market === selectedMarket),
     [overviewStocks, selectedMarket],
   );
-  const marketSummary = useMemo(() => buildMarketSummary(marketStocks, selectedMarket), [marketStocks, selectedMarket]);
+  const marketIndex = marketIndexes[selectedMarket];
+  const marketSummary = useMemo(() => buildMarketSummary(marketStocks, selectedMarket, marketIndex), [marketStocks, selectedMarket, marketIndex]);
   const alerts = useMemo(() => buildSmartAlerts(overviewStocks).slice(0, 10), [overviewStocks]);
   const marketAlerts = useMemo(() => buildSmartAlerts(marketStocks).slice(0, 3), [marketStocks]);
   const movementRows = useMemo(() => buildMovementRows(marketStocks, movementMode), [marketStocks, movementMode]);
@@ -142,16 +144,30 @@ export function Dashboard() {
         />
         <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
           <div>
-            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-[color:var(--chip)] px-3 py-2">
-              <span className="font-black text-sky-500">سوق {marketLabels[selectedMarket]}</span>
-              <span className="number text-lg font-black text-[color:var(--foreground)]">{formatNumber(marketSummary.latestIndex)}</span>
-              <span className={`number inline-flex items-center gap-1 text-sm font-black ${percentClass(marketSummary.changePercent)}`}>
-                {marketSummary.changePercent >= 0 ? <ArrowUpRight size={16} aria-hidden /> : <ArrowDownRight size={16} aria-hidden />}
-                {formatPercent(marketSummary.changePercent)}
-              </span>
-              <span className="number text-sm font-bold text-[color:var(--muted)]">{formatCurrency(marketSummary.totalTradeValue)}</span>
-            </div>
-            <DashboardMarketChart series={marketSummary.series} />
+            {marketIndex.points.length > 0 ? (
+              <>
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-[color:var(--chip)] px-3 py-2">
+                  <span className="font-black text-sky-500">سوق {marketLabels[selectedMarket]}</span>
+                  <span className="number text-lg font-black text-[color:var(--foreground)]">{formatNumber(marketSummary.latestIndex)}</span>
+                  <span className={`number inline-flex items-center gap-1 text-sm font-black ${percentClass(marketSummary.changePercent)}`}>
+                    {(marketSummary.changePercent ?? 0) >= 0 ? <ArrowUpRight size={16} aria-hidden /> : <ArrowDownRight size={16} aria-hidden />}
+                    {formatPercent(marketSummary.changePercent)}
+                  </span>
+                  <span className="number text-sm font-bold text-[color:var(--muted)]">{formatCurrency(marketSummary.totalTradeValue)}</span>
+                </div>
+                <DashboardMarketChart series={marketIndex.points} />
+                <p className="mt-2 text-xs leading-6 text-[color:var(--muted)]">
+                  {language === "ar"
+                    ? `مؤشر داخلي وليس المؤشر الرسمي للسوق: إغلاقات يومية فعلية لـ ${marketIndex.constituents} من ${marketIndex.total} شركة، مرجحة بالقيمة السوقية الحالية، حتى جلسة ${marketIndex.points.at(-1)?.date}. المصدر: ${marketIndex.source}.`
+                    : `Internal index, not the exchange's official one: actual daily closes of ${marketIndex.constituents} of ${marketIndex.total} companies, weighted by current market cap, through the ${marketIndex.points.at(-1)?.date} session. Source: ${marketIndex.source}.`}
+                </p>
+              </>
+            ) : (
+              <EmptyState
+                title={language === "ar" ? "لا يتوفر تاريخ موثّق لهذا السوق" : "No verified history for this market"}
+                message={language === "ar" ? "لا نعرض سلسلة مقدّرة بدل الإغلاقات الفعلية." : "We show no estimated series in place of actual closes."}
+              />
+            )}
           </div>
 
           <div className="grid content-start gap-3">
@@ -480,7 +496,7 @@ function IndexTable({ title, date, rows }: { title: string; date: string; rows: 
   );
 }
 
-function buildMarketSummary(stocks: StockRecord[], market: MarketCode) {
+function buildMarketSummary(stocks: StockRecord[], market: MarketCode, marketIndex: MarketIndexSeries) {
   const totalMarketCap = stocks.reduce((sum, stock) => sum + stock.prices.marketCap, 0);
   const totalTradeValue = stocks.reduce((sum, stock) => sum + stock.prices.tradeValue, 0);
   const totalVolume = stocks.reduce((sum, stock) => sum + stock.prices.volume, 0);
@@ -488,18 +504,18 @@ function buildMarketSummary(stocks: StockRecord[], market: MarketCode) {
   const avgPe = average(stocks.map((stock) => stock.fundamentals.pe));
   const avgRoe = average(stocks.map((stock) => stock.fundamentals.roe));
   const sessionDate = market === "DFM" ? DATASET_INFO.dfmSessionDate : DATASET_INFO.adxSessionDate;
-  const series = buildMarketSeries(stocks);
-  const latestIndex = series.at(-1)?.index ?? 0;
-  const previousIndex = series.at(-2)?.index ?? latestIndex;
-  const change = latestIndex - previousIndex;
-  const changePercent = previousIndex ? (change / previousIndex) * 100 : 0;
-  const indexHigh = Math.max(...series.map((point) => point.index));
-  const indexLow = Math.min(...series.map((point) => point.index));
+  const indexValues = marketIndex.points.map((point) => point.index);
+  const hasIndex = indexValues.length > 1;
+  const latestIndex = hasIndex ? indexValues[indexValues.length - 1] : null;
+  const previousIndex = hasIndex ? indexValues[indexValues.length - 2] : null;
+  const changePercent = hasIndex ? percentChange(indexValues[indexValues.length - 2], indexValues[indexValues.length - 1]) : null;
+  const yearChangePercent = hasIndex ? percentChange(indexValues[0], indexValues[indexValues.length - 1]) : null;
+  const indexHigh = hasIndex ? Math.max(...indexValues) : null;
+  const indexLow = hasIndex ? Math.min(...indexValues) : null;
   const tradedToMarketCap = totalMarketCap > 0 ? (totalTradeValue / totalMarketCap) * 100 : 0;
 
   return {
     sessionDate,
-    series,
     latestIndex,
     changePercent,
     totalMarketCap,
@@ -513,10 +529,10 @@ function buildMarketSummary(stocks: StockRecord[], market: MarketCode) {
     ],
     dataRows: [
       { label: "قيمة التداول", value: formatCurrencyFull(totalTradeValue) },
-      { label: "الافتتاح", value: formatNumber(series[0]?.index ?? latestIndex) },
+      { label: "التغير خلال 12 شهرا", value: formatPercent(yearChangePercent) },
       { label: "الإغلاق السابق", value: formatNumber(previousIndex) },
-      { label: "أعلى", value: formatNumber(indexHigh) },
-      { label: "أدنى", value: formatNumber(indexLow) },
+      { label: "أعلى إغلاق خلال 12 شهرا", value: formatNumber(indexHigh) },
+      { label: "أدنى إغلاق خلال 12 شهرا", value: formatNumber(indexLow) },
       { label: "عدد الشركات", value: formatNumber(stocks.length) },
       { label: "حجم التداول", value: formatNumber(totalVolume) },
       { label: "القيمة السوقية", value: formatCurrencyFull(totalMarketCap) },
@@ -531,22 +547,8 @@ function buildMarketSummary(stocks: StockRecord[], market: MarketCode) {
   };
 }
 
-function buildMarketSeries(stocks: StockRecord[]) {
-  const labels = stocks[0]?.historicalPrices.map((point) => point.label) ?? [];
-  const totalMarketCap = stocks.reduce((sum, stock) => sum + stock.prices.marketCap, 0) || 1;
-
-  return labels.map((label, index) => {
-    const weighted = stocks.reduce((sum, stock) => {
-      const firstPrice = stock.historicalPrices[0]?.price || stock.prices.previousClose || stock.prices.last;
-      const price = stock.historicalPrices[index]?.price ?? stock.prices.last;
-      return sum + (price / Math.max(firstPrice, 0.01)) * stock.prices.marketCap;
-    }, 0);
-
-    return {
-      label,
-      index: Number(((weighted / totalMarketCap) * 1000).toFixed(2)),
-    };
-  });
+function percentChange(from: number, to: number) {
+  return ((to - from) / from) * 100;
 }
 
 function buildMovementRows(stocks: StockRecord[], mode: MovementMode) {

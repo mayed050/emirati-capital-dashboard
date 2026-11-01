@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { StockDetails } from "@/components/StockDetails";
 import { getStockBySymbol, stocksData } from "@/data/stocksData";
+import { getStockHistory } from "@/lib/data/market-history";
 
 export function generateStaticParams() {
   return stocksData.map((stock) => ({ symbol: stock.symbol }));
@@ -12,5 +13,5 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
 
   if (!stock) notFound();
 
-  return <StockDetails stock={stock} />;
+  return <StockDetails stock={stock} history={getStockHistory(stock.symbol)} />;
 }
