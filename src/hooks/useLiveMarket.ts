@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getUnifiedMarketDataset } from "@/lib/data/unified-market-data";
 import { isGstMarketOpen } from "@/utils/marketSimulator";
+import type { PriceAlert } from "@/components/AlertManager";
 import type { StockRecord } from "@/types";
 
 export type MarketState = {
@@ -15,17 +16,12 @@ export type MarketState = {
   triggerSync: () => Promise<void>;
 };
 
+type MarketSnapshot = Omit<MarketState, "setSyncMode" | "triggerSync">;
+
 // إنشاء متغير عالمي منفرد (Global Singleton State) للحفاظ على تيار أسعار موحد
 // عبر شتى الصفحات والمكونات لتفادي إعادة التوليد والتضارب.
 let globalStocks: StockRecord[] = [];
-const globalListeners = new Set<(state: {
-  stocks: StockRecord[];
-  directions: Record<string, "up" | "down" | "none">;
-  syncMode: "5m" | "10m" | "manual" | "disabled";
-  isSyncing: boolean;
-  lastSyncedAt: string;
-  secondsToNextSync: number;
-}) => void>();
+const globalListeners = new Set<() => void>();
 let globalCountdownInterval: NodeJS.Timeout | null = null;
 let globalFlashTimeout: NodeJS.Timeout | null = null;
 
@@ -33,6 +29,18 @@ let globalSyncMode: "5m" | "10m" | "manual" | "disabled" = "5m";
 let globalIsSyncing = false;
 let globalLastSyncedAt = "";
 let globalSecondsToNextSync = 300;
+
+// Rendered on the server and during hydration: the browser-only state is read once subscribed
+const initialSnapshot: MarketSnapshot = {
+  stocks: [],
+  directions: {},
+  isMarketOpen: false,
+  syncMode: "5m",
+  isSyncing: false,
+  lastSyncedAt: "",
+  secondsToNextSync: 300,
+};
+let globalSnapshot = initialSnapshot;
 
 function initializeGlobalState() {
   if (globalStocks.length === 0) {
@@ -66,16 +74,16 @@ function savedSyncSyncCheck(val: string | null): val is typeof globalSyncMode {
 }
 
 function notifySubscribers(directions: Record<string, "up" | "down" | "none"> = {}) {
-  globalListeners.forEach((listener) =>
-    listener({
-      stocks: globalStocks,
-      directions,
-      syncMode: globalSyncMode,
-      isSyncing: globalIsSyncing,
-      lastSyncedAt: globalLastSyncedAt,
-      secondsToNextSync: globalSecondsToNextSync,
-    })
-  );
+  globalSnapshot = {
+    stocks: globalStocks,
+    directions,
+    isMarketOpen: isGstMarketOpen(),
+    syncMode: globalSyncMode,
+    isSyncing: globalIsSyncing,
+    lastSyncedAt: globalLastSyncedAt,
+    secondsToNextSync: globalSecondsToNextSync,
+  };
+  globalListeners.forEach((listener) => listener());
 }
 
 async function fetchLivePrices() {
@@ -170,7 +178,7 @@ function checkAlertsAndTrigger() {
     const savedAlerts = localStorage.getItem("emirati-capital:price-alerts");
     if (savedAlerts) {
       try {
-        const alerts = JSON.parse(savedAlerts) as any[];
+        const alerts = JSON.parse(savedAlerts) as PriceAlert[];
         let triggered = false;
         const updatedAlerts = alerts.map((alert) => {
           if (!alert.active) return alert;
@@ -201,102 +209,65 @@ function checkAlertsAndTrigger() {
   }
 }
 
-export function useLiveMarket(): MarketState {
-  const [stocks, setStocks] = useState<StockRecord[]>([]);
-  const [directions, setDirections] = useState<Record<string, "up" | "down" | "none">>({});
-  const [isMarketOpen, setIsMarketOpen] = useState(false);
-  
-  const [syncMode, setSyncModeState] = useState<"5m" | "10m" | "manual" | "disabled">("5m");
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState("");
-  const [secondsToNextSync, setSecondsToNextSync] = useState(300);
-  
-  useEffect(() => {
-    initializeGlobalState();
-    
-    setStocks(globalStocks);
-    setSyncModeState(globalSyncMode);
-    setIsSyncing(globalIsSyncing);
-    setLastSyncedAt(globalLastSyncedAt);
-    setSecondsToNextSync(globalSecondsToNextSync);
-    setIsMarketOpen(isGstMarketOpen());
+function subscribeToMarket(listener: () => void) {
+  initializeGlobalState();
+  globalListeners.add(listener);
 
-    const handleUpdate = (update: {
-      stocks: StockRecord[];
-      directions: Record<string, "up" | "down" | "none">;
-      syncMode: typeof globalSyncMode;
-      isSyncing: boolean;
-      lastSyncedAt: string;
-      secondsToNextSync: number;
-    }) => {
-      setStocks(update.stocks);
-      setDirections(update.directions);
-      setSyncModeState(update.syncMode);
-      setIsSyncing(update.isSyncing);
-      setLastSyncedAt(update.lastSyncedAt);
-      setSecondsToNextSync(update.secondsToNextSync);
-      setIsMarketOpen(isGstMarketOpen());
-    };
+  if (!globalCountdownInterval) startCountdownInterval();
+  notifySubscribers();
 
-    globalListeners.add(handleUpdate);
-
-    if (!globalCountdownInterval) startCountdownInterval();
-
-    return () => {
-      globalListeners.delete(handleUpdate);
-      if (globalListeners.size === 0) {
-        if (globalCountdownInterval) {
-          clearInterval(globalCountdownInterval);
-          globalCountdownInterval = null;
-        }
+  return () => {
+    globalListeners.delete(listener);
+    if (globalListeners.size === 0) {
+      if (globalCountdownInterval) {
+        clearInterval(globalCountdownInterval);
+        globalCountdownInterval = null;
       }
-    };
-  }, []);
-
-  const setSyncMode = (newMode: typeof globalSyncMode) => {
-    globalSyncMode = newMode;
-    setSyncModeState(newMode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("emirati-capital:sync-mode:v1", newMode);
     }
-
-    if (newMode === "5m") {
-      globalSecondsToNextSync = 300;
-    } else if (newMode === "10m") {
-      globalSecondsToNextSync = 600;
-    } else {
-      globalSecondsToNextSync = 0;
-    }
-    setSecondsToNextSync(globalSecondsToNextSync);
-
-    if (newMode === "5m" || newMode === "10m") {
-      fetchLivePrices();
-    }
-
-    startCountdownInterval();
-    notifySubscribers();
   };
+}
 
-  const triggerSync = async () => {
-    await fetchLivePrices();
-    if (globalSyncMode === "5m") {
-      globalSecondsToNextSync = 300;
-    } else if (globalSyncMode === "10m") {
-      globalSecondsToNextSync = 600;
-    }
-    setSecondsToNextSync(globalSecondsToNextSync);
-    notifySubscribers();
-  };
+function getMarketSnapshot() {
+  return globalSnapshot;
+}
 
-  return {
-    stocks,
-    directions,
-    isMarketOpen,
-    syncMode,
-    setSyncMode,
-    isSyncing,
-    lastSyncedAt,
-    secondsToNextSync,
-    triggerSync,
-  };
+function getServerMarketSnapshot() {
+  return initialSnapshot;
+}
+
+function setSyncMode(newMode: typeof globalSyncMode) {
+  globalSyncMode = newMode;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("emirati-capital:sync-mode:v1", newMode);
+  }
+
+  if (newMode === "5m") {
+    globalSecondsToNextSync = 300;
+  } else if (newMode === "10m") {
+    globalSecondsToNextSync = 600;
+  } else {
+    globalSecondsToNextSync = 0;
+  }
+
+  if (newMode === "5m" || newMode === "10m") {
+    fetchLivePrices();
+  }
+
+  startCountdownInterval();
+  notifySubscribers();
+}
+
+async function triggerSync() {
+  await fetchLivePrices();
+  if (globalSyncMode === "5m") {
+    globalSecondsToNextSync = 300;
+  } else if (globalSyncMode === "10m") {
+    globalSecondsToNextSync = 600;
+  }
+  notifySubscribers();
+}
+
+export function useLiveMarket(): MarketState {
+  const snapshot = useSyncExternalStore(subscribeToMarket, getMarketSnapshot, getServerMarketSnapshot);
+  return { ...snapshot, setSyncMode, triggerSync };
 }

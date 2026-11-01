@@ -19,7 +19,7 @@ export interface PriceAlert {
 
 export function playChime() {
   if (typeof window === "undefined") return;
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) return;
   try {
     const ctx = new AudioContextClass();

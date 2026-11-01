@@ -35,6 +35,20 @@ type OverridesFile = {
   quotes: Record<string, QuoteOverride>;
 };
 
+type YahooChartMeta = {
+  regularMarketPrice?: number;
+  previousClose?: number;
+  regularMarketVolume?: number;
+  regularMarketDayHigh?: number;
+  regularMarketDayLow?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+};
+
+type YahooChartResponse = {
+  chart?: { result?: { meta?: YahooChartMeta }[] };
+};
+
 const overridesPath = path.resolve(process.cwd(), "src", "data", "generated", "market-overrides.json");
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -157,8 +171,8 @@ async function syncMarketData() {
           headers: { "User-Agent": USER_AGENT }
         });
         if (res.status === 200) {
-          const data = await res.json() as any;
-          const meta = data.chart?.result?.[0]?.meta || {};
+          const data = await res.json() as YahooChartResponse;
+          const meta: YahooChartMeta = data.chart?.result?.[0]?.meta || {};
           const livePrice = meta.regularMarketPrice;
           const prevClose = meta.previousClose ?? stock.prices.previousClose;
 
