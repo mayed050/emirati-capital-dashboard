@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-11-14T02:49:05.110Z",
+  "updatedAt": "2026-11-14T09:31:56.699Z",
   "source": "Yahoo Finance (DFM: 20/21) + TradingView (ADX: 21/22)",
   "quotes": {
     "DEWA": {
@@ -25,7 +25,7 @@
       "change": -0.14,
       "changePercent": -2.5225,
       "high": 5.54,
-      "low": 5.42,
+      "low": 5.41,
       "high52": 6.85,
       "low52": 4.96,
       "volume": 2530586,
@@ -457,7 +457,7 @@
       "change": -0.04,
       "changePercent": -1.7094,
       "high": 2.32,
-      "low": 2.26,
+      "low": 2.25,
       "high52": 2.89,
       "low52": 1.97,
       "volume": 571506,
