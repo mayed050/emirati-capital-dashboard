@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-11-14T09:31:56.699Z",
+  "updatedAt": "2026-11-14T16:02:24.146Z",
   "source": "Yahoo Finance (DFM: 20/21) + TradingView (ADX: 21/22)",
   "quotes": {
     "DEWA": {
@@ -159,7 +159,7 @@
       "volume": 2092470,
       "tradeValue": 5326900.52,
       "trades": 112,
-      "marketCap": 12678821289.32,
+      "marketCap": 12728737862.4,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -175,7 +175,7 @@
       "volume": 1898700,
       "tradeValue": 42459955.5,
       "trades": 940,
-      "marketCap": 195350651987.68,
+      "marketCap": 194482423554.9,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -191,7 +191,7 @@
       "volume": 6620576,
       "tradeValue": 25314521.07,
       "trades": 420,
-      "marketCap": 48668705690.01,
+      "marketCap": 47795162697.59,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -223,7 +223,7 @@
       "volume": 3942690,
       "tradeValue": 22790106.84,
       "trades": 680,
-      "marketCap": 93124445053.04,
+      "marketCap": 92485512927.02,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -239,7 +239,7 @@
       "volume": 10889506,
       "tradeValue": 228298279.86,
       "trades": 580,
-      "marketCap": 233224283572.33,
+      "marketCap": 231460774590.22,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -255,7 +255,7 @@
       "volume": 5902017,
       "tradeValue": 104291493.9,
       "trades": 840,
-      "marketCap": 140527398290.64,
+      "marketCap": 139737930538.15,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -271,7 +271,7 @@
       "volume": 4064858,
       "tradeValue": 95283705.32,
       "trades": 720,
-      "marketCap": 89571621093.79,
+      "marketCap": 87630900928.68,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -287,7 +287,7 @@
       "volume": 3600,
       "tradeValue": 25553.32,
       "trades": 4,
-      "marketCap": 4040251168.89,
+      "marketCap": 4045941793.35,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -495,7 +495,7 @@
       "volume": 574253,
       "tradeValue": 180014747.97,
       "trades": 8,
-      "marketCap": 689812858883.72,
+      "marketCap": 687622976792.09,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -525,7 +525,7 @@
       "volume": 21010214,
       "tradeValue": 48033156.17,
       "trades": 490,
-      "marketCap": 68417252357.32,
+      "marketCap": 68717327743.74,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -541,7 +541,7 @@
       "volume": 5545120,
       "tradeValue": 39083263.08,
       "trades": 590,
-      "marketCap": 70781768683.46,
+      "marketCap": 70482266868.95,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -557,7 +557,7 @@
       "volume": 7889601,
       "tradeValue": 67186069.89,
       "trades": 700,
-      "marketCap": 67584344475.6,
+      "marketCap": 66956383661.26,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -573,7 +573,7 @@
       "volume": 1598843,
       "tradeValue": 4453333.19,
       "trades": 76,
-      "marketCap": 46185088470.29,
+      "marketCap": 45532296304.88,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -589,7 +589,7 @@
       "volume": 7015166,
       "tradeValue": 47203371.01,
       "trades": 940,
-      "marketCap": 50004311768.94,
+      "marketCap": 49782725380.64,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -605,7 +605,7 @@
       "volume": 12099356,
       "tradeValue": 26453402.26,
       "trades": 390,
-      "marketCap": 18066698355.4,
+      "marketCap": 18149573036.73,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -621,7 +621,7 @@
       "volume": 9213660,
       "tradeValue": 18304607.65,
       "trades": 360,
-      "marketCap": 70737279082.24,
+      "marketCap": 68666921620.4,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     },
@@ -685,7 +685,7 @@
       "volume": 1530763,
       "tradeValue": 5562685.49,
       "trades": 115,
-      "marketCap": 20325558161.66,
+      "marketCap": 20381550044.63,
       "lastUpdated": "2026-11-14",
       "source": "TradingView Scanner (15-minute delay)"
     }
