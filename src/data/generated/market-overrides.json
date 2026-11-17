@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-11-16T20:57:37.116Z",
+  "updatedAt": "2026-11-17T03:30:55.820Z",
   "source": "Yahoo Finance (DFM: 20/21) + TradingView (ADX: 21/22)",
   "quotes": {
     "DEWA": {
@@ -16,7 +16,7 @@
       "tradeValue": 20509991.33,
       "trades": 830,
       "marketCap": 138500000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "SALIK": {
@@ -32,7 +32,7 @@
       "tradeValue": 23274868.1,
       "trades": 980,
       "marketCap": 40875000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "TALABAT": {
@@ -48,7 +48,7 @@
       "tradeValue": 43069417.72,
       "trades": 1850,
       "marketCap": 27713006344.28,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DIB": {
@@ -64,7 +64,7 @@
       "tradeValue": 69616103.46,
       "trades": 512,
       "marketCap": 55826139146.9,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "EMIRATESNBD": {
@@ -80,7 +80,7 @@
       "tradeValue": 96695065.6,
       "trades": 920,
       "marketCap": 226386881387.7,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DU": {
@@ -96,7 +96,7 @@
       "tradeValue": 14801371,
       "trades": 340,
       "marketCap": 58927777857.21,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "EMPOWER": {
@@ -112,7 +112,7 @@
       "tradeValue": 4534145.76,
       "trades": 168,
       "marketCap": 15900000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "EMAAR": {
@@ -128,7 +128,7 @@
       "tradeValue": 337374645.9,
       "trades": 1420,
       "marketCap": 108717115142.38,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "TECOM": {
@@ -144,7 +144,7 @@
       "tradeValue": 1853866.8,
       "trades": 52,
       "marketCap": 17750000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "NMDCENR": {
@@ -160,7 +160,7 @@
       "tradeValue": 8629701.91,
       "trades": 112,
       "marketCap": 12728269618.66,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "EAND": {
@@ -176,7 +176,7 @@
       "tradeValue": 46907389.28,
       "trades": 940,
       "marketCap": 194475269257.39,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADNOCDIST": {
@@ -192,7 +192,7 @@
       "tradeValue": 37149713.36,
       "trades": 420,
       "marketCap": 47793404488.25,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADNOCGAS": {
@@ -208,7 +208,7 @@
       "tradeValue": 71548136.62,
       "trades": 780,
       "marketCap": 263574911411.73,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADNOCDRILL": {
@@ -224,7 +224,7 @@
       "tradeValue": 27185775.16,
       "trades": 680,
       "marketCap": 92482110723.04,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "FAB": {
@@ -240,7 +240,7 @@
       "tradeValue": 135852986.83,
       "trades": 580,
       "marketCap": 231452259994.34,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADCB": {
@@ -256,7 +256,7 @@
       "tradeValue": 68720455.81,
       "trades": 840,
       "marketCap": 139732790090.44,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADIB": {
@@ -272,7 +272,7 @@
       "tradeValue": 61583174.17,
       "trades": 720,
       "marketCap": 87627677308.13,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADNIC": {
@@ -288,7 +288,7 @@
       "tradeValue": 178087.72,
       "trades": 4,
       "marketCap": 4045792957.94,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "EMAARDEV": {
@@ -304,7 +304,7 @@
       "tradeValue": 69792483.6,
       "trades": 412,
       "marketCap": 58800000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "MASQ": {
@@ -320,7 +320,7 @@
       "tradeValue": 389990,
       "trades": 12,
       "marketCap": 59179899850,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "AIRARABIA": {
@@ -336,7 +336,7 @@
       "tradeValue": 9817856.5,
       "trades": 460,
       "marketCap": 23566835000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "PARKIN": {
@@ -352,7 +352,7 @@
       "tradeValue": 6288321.27,
       "trades": 370,
       "marketCap": 20310000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DUBAIRESI": {
@@ -368,7 +368,7 @@
       "tradeValue": 978235.28,
       "trades": 190,
       "marketCap": 16510000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DIC": {
@@ -384,7 +384,7 @@
       "tradeValue": 6524764.68,
       "trades": 140,
       "marketCap": 15817512856.1,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DFM": {
@@ -400,7 +400,7 @@
       "tradeValue": 27975195.6,
       "trades": 118,
       "marketCap": 10560000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "GULFNAV": {
@@ -432,7 +432,7 @@
       "tradeValue": 1034296.2,
       "trades": 178,
       "marketCap": 6362105771,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "ALEC": {
@@ -448,7 +448,7 @@
       "tradeValue": 1460690.22,
       "trades": 260,
       "marketCap": 6450000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "DTC": {
@@ -464,7 +464,7 @@
       "tradeValue": 1133896.44,
       "trades": 200,
       "marketCap": 5700000000,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "TABREED": {
@@ -480,7 +480,7 @@
       "tradeValue": 2760545.1,
       "trades": 55,
       "marketCap": 6544123461.41,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "Yahoo Finance Free Chart Live"
     },
     "IHC": {
@@ -496,7 +496,7 @@
       "tradeValue": 99763320.6,
       "trades": 8,
       "marketCap": 687597681656.1,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "TAQA": {
@@ -526,7 +526,7 @@
       "tradeValue": 41485489.43,
       "trades": 490,
       "marketCap": 68714799884.42,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ALPHADHABI": {
@@ -542,7 +542,7 @@
       "tradeValue": 57852660.23,
       "trades": 590,
       "marketCap": 70479674083.97,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ALDAR": {
@@ -558,7 +558,7 @@
       "tradeValue": 49997570.17,
       "trades": 700,
       "marketCap": 66953920580.64,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "MODON": {
@@ -574,7 +574,7 @@
       "tradeValue": 4047768.61,
       "trades": 76,
       "marketCap": 45530621338.12,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADNOCLS": {
@@ -590,7 +590,7 @@
       "tradeValue": 124988915.85,
       "trades": 940,
       "marketCap": 49780894056.13,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "FERTIGLB": {
@@ -606,7 +606,7 @@
       "tradeValue": 20371685.38,
       "trades": 390,
       "marketCap": 18148905380.28,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "2POINTZERO": {
@@ -622,7 +622,7 @@
       "tradeValue": 33807140.08,
       "trades": 360,
       "marketCap": 68664395615.34,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "ADPORTS": {
@@ -638,7 +638,7 @@
       "tradeValue": 568073.88,
       "trades": 140,
       "marketCap": 31084832891.18,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "AMR": {
@@ -654,7 +654,7 @@
       "tradeValue": 15902046.52,
       "trades": 365,
       "marketCap": 21481520828.88,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "SIB": {
@@ -670,7 +670,7 @@
       "tradeValue": 7129600.66,
       "trades": 620,
       "marketCap": 12650107880.09,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     },
     "PRESIGHT": {
@@ -686,7 +686,7 @@
       "tradeValue": 21617801.76,
       "trades": 115,
       "marketCap": 20380800281.9,
-      "lastUpdated": "2026-11-16",
+      "lastUpdated": "2026-11-17",
       "source": "TradingView Scanner (15-minute delay)"
     }
   }
