@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-11-26T14:44:15.138Z",
+  "updatedAt": "2026-11-26T23:21:46.557Z",
   "source": "Yahoo Finance (DFM: 20/21) + TradingView (ADX: 21/22)",
   "quotes": {
     "DEWA": {
@@ -12,8 +12,8 @@
       "low": 2.85,
       "high52": 3.15,
       "low52": 2.47,
-      "volume": 3226392,
-      "tradeValue": 9195217.2,
+      "volume": 3125103,
+      "tradeValue": 8906543.55,
       "trades": 830,
       "marketCap": 142500000000,
       "lastUpdated": "2026-11-26",
